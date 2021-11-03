@@ -4,12 +4,15 @@
 import os, sys
 import webbrowser # allows opening of new tab on start
 import argparse # cli paths
-import Path
+
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
 from flask import Flask, templating, render_template, request, redirect, flash, url_for
 import werkzeug.serving # needed to make production worthy app that's secure
+
+import pathlib
+from pathlib import Path
 
 class WebApp():
     self._app = Flask("LibraryDB")
