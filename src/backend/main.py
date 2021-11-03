@@ -35,12 +35,31 @@ class WebApp():
         self._port = port
         logLevel = logging.INFO if self._is_debug == True else logging.ERROR
         self._logger.setLevel(logLevel)
+        
+        # print urls before starting
+        self.printSites()
+        
+        # create routes
+        self.generateRoutes()
 
-        # self._app.run(host=self._host, port=self._port, debug=self._is_debug)
-        werkzeug.serving.run_simple(
-            hostname=self._host, port=self._port,
-            application=self._app, use_debugger=self._is_debug)
-        # http://localhost:8080/
+        self._app.run(host=self._host, port=self._port, debug=self._is_debug)
+        # FOR PRODUCTION
+        # werkzeug.serving.run_simple(
+        #     hostname=self._host, port=self._port,
+        #     application=self._app, use_debugger=self._is_debug)
+
+    def generateRoutes(self):
+        """Wrapper around all url route generation"""
+        self.createLandingPage()
+
+    def createLandingPage(self):
+        @self._app.route("/", methods=["GET"])
+        def createMainPage():
+            return "Hello World"
+
+    def printSites(self):
+        print("Existing URLs:")
+        print(f"http://localhost:8080/")
 
 if __name__ == '__main__':
 
