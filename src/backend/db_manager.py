@@ -24,9 +24,17 @@ class DB_Manager():
         )
         self.cursor = self.conn.cursor()
 
+        self.call_track_char()
+
     def cleanup(self):
         self.cursor.close()
         self.conn.close()
+
+    def call_track_char(self):
+        self.cursor.execute('call track_character(%s)', 'Frodo')
+        for result in self.cursor.fetchall():
+            print(result)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
@@ -57,6 +65,6 @@ if __name__ == '__main__':
 
     # actually parse args (convert to dict form)
     args = vars(parser.parse_args())
-    
+
     # make the object
     db = DB_Manager(args["user"], args["pwd"], args["db_name"])
