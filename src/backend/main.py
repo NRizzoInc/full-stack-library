@@ -14,6 +14,11 @@ import werkzeug.serving # needed to make production worthy app that's secure
 import pathlib
 from pathlib import Path
 
+#--------------------------------Project Includes--------------------------------#
+# Do this to ensure this file has access to the 'backend' dir
+sys.path.append(Path(__file__).parent.resolve())
+from formManager import bookLookupForm
+
 class WebApp():
     def __init__(self, port, is_debug):
         self._app = Flask("LibraryDB")
@@ -52,12 +57,20 @@ class WebApp():
     def generateRoutes(self):
         """Wrapper around all url route generation"""
         self.createLandingPage()
+        self.createFormPages()
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
         def createMainPage():
             return render_template("mainPage.html", title="Library DB App")
             return "Hello World"
+
+    def createFormPages(self):
+        @self._app.route('/search_book', methods=['POST'])
+        def search_book():
+            form = bookLookupForm(request.form)
+            # TODO: redirect to a new page that just has the results
+            return f"Book searched = {form.book_title.data}"
 
     def printSites(self):
         print("Existing URLs:")
