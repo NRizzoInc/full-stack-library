@@ -16,7 +16,6 @@ from pathlib import Path
 
 #--------------------------------Project Includes--------------------------------#
 # Do this to ensure this file has access to the 'backend' dir
-sys.path.append(Path(__file__).parent.resolve())
 from formManager import bookLookupForm
 
 class WebApp():

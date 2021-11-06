@@ -4,6 +4,7 @@ from wtforms import Form, BooleanField, StringField, PasswordField, validators
 """
 
 class bookLookupForm(Form):
+    """Form responsible for having fields to enable users to lookup books"""
     book_title = StringField('Book Name')
 
 # TODO: add form to add book
