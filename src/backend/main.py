@@ -24,7 +24,8 @@ class WebApp():
         src_dir = backend_dir.parent
         frontend_dir = src_dir / 'frontend'
         template_dir = frontend_dir / 'templates'
-        self._app.static_folder = str(frontend_dir)
+        static_dir = frontend_dir / "static"
+        self._app.static_folder = str(static_dir)
         self._app.template_folder = str(template_dir)
 
 
@@ -35,10 +36,10 @@ class WebApp():
         self._port = port
         logLevel = logging.INFO if self._is_debug == True else logging.ERROR
         self._logger.setLevel(logLevel)
-        
+
         # print urls before starting
         self.printSites()
-        
+
         # create routes
         self.generateRoutes()
 
@@ -55,6 +56,7 @@ class WebApp():
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
         def createMainPage():
+            return render_template("mainPage.html", title="Library DB App")
             return "Hello World"
 
     def printSites(self):
