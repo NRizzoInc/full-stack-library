@@ -1,6 +1,7 @@
 from wtforms import Form, BooleanField, StringField, PasswordField, validators
 
 """File responsible for defining all form classes to be used by the webapp
+Ref: https://flask.palletsprojects.com/en/2.0.x/patterns/wtforms/
 """
 
 class bookLookupForm(Form):
