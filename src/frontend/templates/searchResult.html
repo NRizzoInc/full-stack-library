@@ -17,24 +17,9 @@
 
 Search Results for {{ book_title_searched }}:
 <br>
-    <!-- Make a table to insert the search results into -->
-    <table>
-        <tr>
-            <!-- TODO: add more columns as the field list is finalized -->
-            <th>Library Available At</th>
-            <th>Number of Copies Available</th>
-            <th>Hold List Size</th>
-            <th>Digital Or Physical</th>
-        </tr>
-        <tr id="search-result-placeholder">
-            <td>test1</td>
-            <td>test2</td>
-            <td>test3</td>
-            <td>test4</td>
-        </tr>
-    </table>
+    {{ result_table }}
+
     <br>
-    <!-- make button for user to return to the previous page -->
     <button onclick="window.location.href='{{ url }}' ">
         Return to Search Menu
     </button>

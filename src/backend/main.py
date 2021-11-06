@@ -15,8 +15,8 @@ import pathlib
 from pathlib import Path
 
 #--------------------------------Project Includes--------------------------------#
-# Do this to ensure this file has access to the 'backend' dir
 from formManager import bookLookupForm
+from bookSearchTable import BookSearchTable, BookSearchCell
 
 class WebApp():
     def __init__(self, port, is_debug):
@@ -70,9 +70,14 @@ class WebApp():
             form = bookLookupForm(request.form)
             # TODO: redirect to a new page that just has the results
             url = "/"
-            print(form.book_title)
-            return render_template("searchResult.html", book_title_searched=form.book_title.data, url=url)
-            return f"Book searched = {form.book_title.data}"
+            serach_res = [
+                BookSearchCell('asdasd', '5'),
+                BookSearchCell('hhhhhhh', 8)    ]
+            search_table = BookSearchTable(serach_res)
+
+            return render_template("searchResult.html", book_title_searched=form.book_title.data,
+                url=url, result_table=search_table)
+
 
 
     def printSites(self):
