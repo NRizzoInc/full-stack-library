@@ -15,11 +15,20 @@
 </head>
 <body>
     Hello World
-    <form action="/search_book", method="post">
-        <label for="search-book">Search A Book:</label><br>
-        <input type="text", id="search-book", name="search-book">
+    {% block content %}
+        <form action="/search_book", method="post">
+            <p>
+                {{ form.book_title.label }}<br>
+                {{ form.book_title(size=32) }}
+            </p>
+            <p>{{ form.submit() }}</p>
+        </form>
+    {% endblock %}
+    <!-- <form action="/search_book", method="post">
+        <label for="search-book-title">Search A Book:</label><br>
+        <input type="text", id="search-book-title">
         <input type="submit" value="Search" >
-    </form>
+    </form> -->
 </body>
 
 

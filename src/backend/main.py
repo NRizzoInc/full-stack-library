@@ -61,7 +61,7 @@ class WebApp():
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
         def createMainPage():
-            return render_template("mainPage.html", title="Library DB App")
+            return render_template("mainPage.html", title="Library DB App", form=bookLookupForm())
             return "Hello World"
 
     def createFormPages(self):
@@ -70,7 +70,8 @@ class WebApp():
             form = bookLookupForm(request.form)
             # TODO: redirect to a new page that just has the results
             url = "/"
-            return render_template("searchResult.html", book_title_searched=form.book_title, url=url)
+            print(form.book_title)
+            return render_template("searchResult.html", book_title_searched=form.book_title.data, url=url)
             return f"Book searched = {form.book_title.data}"
 
 
