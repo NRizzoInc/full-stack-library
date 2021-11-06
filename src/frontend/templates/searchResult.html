@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="../static/images/library_icon.png">
+    <title>Book Search Results</title>
+
+    <!-- Javascript Includes (in alphabetical order)-->
+    <!-- Library Includes -->
+    <script src="../static/js/extern/jquery-3.5.1.min.js"></script>
+
+    <!-- Project Includes -->
+
+</head>
+<body>
+Search Results for {{ book_title_searched }}:
+<br>
+    <!-- Make a table to insert the search results into -->
+    <table>
+        <tr>
+            <!-- TODO: add more columns as the field list is finalized -->
+            <th>Library Available At</th>
+            <th>Number of Copies Available</th>
+            <th>Hold List Size</th>
+            <th>Digital Or Physical</th>
+        </tr>
+        <tr id="search-result-placeholder">
+
+        </tr>
+    </table>
+    <br>
+    <!-- make button for user to return to the previous page -->
+    <button onclick="window.location.href='{{ url }}' ">
+        Return to Search Menu
+    </button>
+</body>
+
+
+</html>

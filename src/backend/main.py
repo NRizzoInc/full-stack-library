@@ -69,11 +69,14 @@ class WebApp():
         def search_book():
             form = bookLookupForm(request.form)
             # TODO: redirect to a new page that just has the results
+            url = "/"
+            return render_template("searchResult.html", book_title_searched=form.book_title, url=url)
             return f"Book searched = {form.book_title.data}"
+
 
     def printSites(self):
         print("Existing URLs:")
-        print(f"http://localhost:8080/")
+        print(f"http://localhost:{self._port}/")
 
 if __name__ == '__main__':
 
