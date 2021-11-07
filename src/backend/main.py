@@ -62,7 +62,6 @@ class WebApp():
         @self._app.route("/", methods=["GET"])
         def createMainPage():
             return render_template("mainPage.html", title="Library DB App", form=bookLookupForm())
-            return "Hello World"
 
     def createFormPages(self):
         @self._app.route('/search_book', methods=['POST'])
