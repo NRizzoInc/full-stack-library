@@ -1,3 +1,6 @@
+# Project Specific Ignores
+cs3200-venv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
