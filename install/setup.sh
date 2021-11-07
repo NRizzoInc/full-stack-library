@@ -66,9 +66,9 @@ THIS_FILE_DIR="$(readlink -fm $0/..)"
 virtualEnvironName="cs3200-venv"
 rootDir="$(readlink -fm ${THIS_FILE_DIR}/..)"
 srcDir="$(readlink -fm ${rootDir}/..)"
-backendDir=${srcDir}/backend
-installDir=${rootDir}/install
-virtualEnvironDir=${rootDir}/${virtualEnvironName}
+backendDir="${srcDir}/backend"
+installDir="${rootDir}/install"
+virtualEnvironDir="${rootDir}/${virtualEnvironName}"
 pythonVersion=3.9
 pipLocation="" # make global
 pythonLocation="" # global (changed based on OS)
@@ -92,10 +92,10 @@ if [[ ${isWindows} = true ]]; then
     echo "#1.2 Creating Virtual Environment"
     py -3 -m venv $virtualEnvironDir # actually create the virtual environment
     $virtualEnvironDir/Scripts/activate
-    pipLocation=$virtualEnvironDir/Scripts/pip3.exe
+    pipLocation="$virtualEnvironDir/Scripts/pip3.exe"
 
     echo "#1.3 Getting Path to Virtual Environment's Python"
-    pythonLocation=${virtualEnvironDir}/Scripts/python.exe
+    pythonLocation="${virtualEnvironDir}/Scripts/python.exe"
     echo "-- pythonLocation: ${pythonLocation}"
 
 else
@@ -116,11 +116,11 @@ else
 
     echo "#1.4 Creating Virtual Environment"
     ${pythonName} -m venv ${virtualEnvironDir} # actually create the virtual environment
-    source ${virtualEnvironDir}/bin/activate
-    pipLocation=${virtualEnvironDir}/bin/pip${pythonVersion}
+    source "${virtualEnvironDir}/bin/activate"
+    pipLocation="${virtualEnvironDir}/bin/pip${pythonVersion}"
 
     echo "#1.4.1 Getting Path to Virtual Environment's Python"
-    pythonLocation=${virtualEnvironDir}/bin/python # NOTE: don't use ".exe"
+    pythonLocation="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
     echo "-- pythonLocation: ${pythonLocation}"
 fi
 
@@ -131,5 +131,5 @@ if [[ ${upgradePkgs} == true ]]; then
 
     # now pip necessary packages
     echo "#3 Installing all packages"
-    "${pipLocation}" install -r "${installDir}"/requirements.txt
+    "${pipLocation}" install -r "${installDir}/requirements.txt"
 fi

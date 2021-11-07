@@ -14,10 +14,10 @@ setupScript="${rootDir}/install/setup.sh"
 # check OS... (decide how to call python)
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
     # windows
-    venvPath=${virtualEnvironDir}/Scripts/python.exe
+    venvPath="${virtualEnvironDir}/Scripts/python.exe"
 else
     # linux
-    venvPath=${virtualEnvironDir}/bin/python # NOTE: don't use ".exe"
+    venvPath="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
 fi
 
 # CLI Flags
