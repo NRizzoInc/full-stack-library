@@ -57,6 +57,7 @@ class WebApp():
         """Wrapper around all url route generation"""
         self.createLandingPage()
         self.createFormPages()
+        self.createCheckoutPage()
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
@@ -69,15 +70,25 @@ class WebApp():
             form = bookLookupForm(request.form)
             url = "/"
             # TODO: actually do sql query
+            # book_id, title, num_avail
             serach_res = [
-                BookSearchCell('asdasd', '5'),
-                BookSearchCell('hhhhhhh', 8)    ]
+                BookSearchCell(2, 'book2', 50),
+                BookSearchCell(5, 'book5', 100)
+            ]
             search_table = BookSearchTable(serach_res)
 
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)
 
-
+    def createCheckoutPage(self):
+        @self._app.route('/checkout', methods=['POST', 'GET'])
+        def checkout():
+            title = request.args.get('book_title')
+            if request.method == 'GET':
+                return render_template("checkout.html", book_title=title)
+            elif request.method == "POST":
+                # TODO: make a query / call procedure for checking out a book
+                print(f"Checking out book {title}")
 
     def printSites(self):
         print("Existing URLs:")
