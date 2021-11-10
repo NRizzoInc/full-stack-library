@@ -67,8 +67,8 @@ class WebApp():
         @self._app.route('/search_book', methods=['POST'])
         def search_book():
             form = bookLookupForm(request.form)
-            # TODO: redirect to a new page that just has the results
             url = "/"
+            # TODO: actually do sql query
             serach_res = [
                 BookSearchCell('asdasd', '5'),
                 BookSearchCell('hhhhhhh', 8)    ]
