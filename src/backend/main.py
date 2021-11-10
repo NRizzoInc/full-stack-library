@@ -91,6 +91,7 @@ class WebApp():
                 print(f"Checking out book {title}")
                 # TODO: call checkout procedure and return to home
                 # TODO: have due_date be part of procedure results
+                # TODO: have success_status include if they're on hold or not + details
                 return redirect(url_for("checkoutResult",
                     success_status="Success",
                     book_title=title,
