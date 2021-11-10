@@ -57,7 +57,7 @@ class WebApp():
         """Wrapper around all url route generation"""
         self.createLandingPage()
         self.createFormPages()
-        self.createCheckoutPage()
+        self.createCheckoutPages()
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
@@ -80,7 +80,7 @@ class WebApp():
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)
 
-    def createCheckoutPage(self):
+    def createCheckoutPages(self):
         @self._app.route('/checkout', methods=['POST', 'GET'])
         def checkout():
             title = request.args.get('book_title')
@@ -89,6 +89,22 @@ class WebApp():
             elif request.method == "POST":
                 # TODO: make a query / call procedure for checking out a book
                 print(f"Checking out book {title}")
+                # TODO: call checkout procedure and return to home
+                # TODO: have due_date be part of procedure results
+                return redirect(url_for("checkoutResult",
+                    success_status="Success",
+                    book_title=title,
+                    due_date="Sept 20, 2022"))
+
+        @self._app.route('/checkoutResult', methods=['GET'])
+        def checkoutResult():
+            title = request.args.get('book_title')
+            _due_date = request.args.get('due_date')
+            _success_status = request.args.get('success_status')
+            return render_template("checkoutResult.html",
+                                success_status = _success_status,
+                                book_title = title,
+                                due_date = _due_date)
 
     def printSites(self):
         print("Existing URLs:")
