@@ -128,6 +128,8 @@ CREATE TABLE employee
   is_audio_book BOOL NOT NULL,
   num_pages INT,
   checkout_length_days INT,
+  -- the late fee that accumulate every day past the due date
+  late_fee_per_day FLOAT NOT NULL DEFAULT 0.5,
  
  -- The employee ID of who loaned out this book
   loaned_by INT,
@@ -205,48 +207,20 @@ CREATE TABLE checked_out_books
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
-
--- DROP TABLE IF EXISTS book_return;
--- Represents a user returning a book to a library branch
-CREATE TABLE book_return
-(
- -- used to log return info in user_history
- return_id INT PRIMARY KEY NOT NULL,
- -- what user returned out the book?
- user_id INT NOT NULL,
- -- what book is returned out?
- book_id INT NOT NULL,
- -- what library is the book returned to?
- library_id INT NOT NULL,
- -- date book is returned out
- return_date DATE NOT NULL,
- 
-  CONSTRAINT FK_book_return_book
-    FOREIGN KEY (book_id) REFERENCES book(book_id)
-    ON UPDATE CASCADE ON DELETE CASCADE, 
- 
-  CONSTRAINT FK_book_return_user
-    FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-    
- CONSTRAINT FK_book_return_library
-    FOREIGN KEY (library_id) REFERENCES library(library_id)
-    ON UPDATE CASCADE ON DELETE CASCADE 
-);
-
-
 -- DROP TABLE IF EXISTS user_hist;
 -- Table representing the library history of users
 CREATE TABLE user_hist
 (
- loan_id INT PRIMARY KEY NOT NULL,
+ loan_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
  -- the user who checked out the book
  user_id INT NOT NULL,
  -- the book they checked out
  book_borrowed INT NOT NULL,
+  -- what library is the book checked out from?
+ library_id INT NOT NULL,
  date_borrowed DATE NOT NULL,
  date_returned DATE,
- return_id INT,
+
  
  CONSTRAINT FK_hist_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
@@ -255,8 +229,8 @@ CREATE TABLE user_hist
 CONSTRAINT FK_hist_book
     FOREIGN KEY (book_borrowed) REFERENCES book(book_id)
     ON UPDATE CASCADE ON DELETE CASCADE,    
-    
- CONSTRAINT FK_hist_return
-    FOREIGN KEY (return_id) REFERENCES book_return(return_id)
-    ON UPDATE CASCADE ON DELETE CASCADE
+   
+CONSTRAINT FK_hist_library
+    FOREIGN KEY (library_id) REFERENCES library(library_id)
+    ON UPDATE CASCADE ON DELETE CASCADE 
 );
