@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="../static/images/library_icon.png">
+    <title>Book Search Results</title>
+
+    <!-- Javascript Includes (in alphabetical order)-->
+    <!-- Library Includes -->
+    <script src="../static/js/extern/jquery-3.5.1.min.js"></script>
+
+    <!-- Project Includes -->
+
+</head>
+<body>
+
+Search Results for {{ book_title_searched }}:
+<br>
+    {{ result_table }}
+
+    <br>
+    <button onclick="window.location.href='{{ url }}' ">
+        Return to Search Menu
+    </button>
+</body>
+
+
+</html>
