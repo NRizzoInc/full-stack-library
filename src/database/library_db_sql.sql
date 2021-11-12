@@ -234,3 +234,93 @@ CONSTRAINT FK_hist_library
     FOREIGN KEY (library_id) REFERENCES library(library_id)
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
+
+
+-- PROCEDURES
+-- take book title, give back copies available, number of holds, library it is at
+
+-- search_for_available
+-- WIP, these will be used to get the exact library each book is located at
+    -- gets bookcase_id given a bookshelf_id from a book
+    -- The way this is set up, it will get the bookcases of only AVAILABLE books!
+   -- bc_locator AS(
+ --  SELECT bookcase_id, copies_all.book_id AS book_id FROM bookshelf, copies_all 
+ --   WHERE (bookshelf.bookshelf_id = copies_all.bookshelf_id)),
+    
+   -- gets library_id given a bookcase_id from a book 
+ --  lib_locator AS(
+--    SELECT library_id, bc_locator.book_id AS book_id FROM bookcase, bc_locator
+ --    WHERE (bc_locator.bookcase_id = bookcase.library_id)),
+
+
+
+-- Takes book title, returns # of copies available, # checked out, and # on hold
+DELIMITER $$
+CREATE PROCEDURE available_hold_count(IN booktitle_p VARCHAR(50))
+BEGIN
+  WITH 
+  -- all copies of this book in the system
+  copies_all AS(
+   SELECT book_id FROM book 
+    WHERE (title = booktitle_p)),
+  
+  -- all copies that are checked out
+  copies_checked_out AS(
+   SELECT book_id FROM checked_out_books 
+     WHERE book_id IN (SELECT * FROM all_copies)),
+    
+    -- all books in the system that are NOT checked out
+  num_copies_available AS(
+   SELECT count(*) AS Number_Available FROM copies_all 
+    WHERE (book_id.copies_all NOT IN (SELECT * FROM copies_checked_out))),
+    
+-- number of copies that are checked out
+  num_copies_checked_out AS(
+   SELECT count(*) AS Number_Checked_Out FROM checked_out_books 
+     WHERE book_id IN (SELECT * FROM all_copies)),
+     
+-- number of copies that are on hold
+  num_copies_on_hold AS(
+   SELECT count(*) AS Number_On_Hold FROM holds 
+     WHERE (holds.book_id = (SELECT * FROM copies_ALL LIMIT 1)))
+   
+   SELECT Number_Available, Number_Checked_Out, Number_On_Hold
+    FROM num_copies_available, num_copies_checked_out, num_copies_on_hold;
+   
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- Given a username, returns true (1) if username is not currently used
+-- false (0) if not used
+DELIMITER $$
+CREATE PROCEDURE does_username_exist(IN username_p VARCHAR(50))
+BEGIN
+   SELECT EXISTS(SELECT username FROM lib_user WHERE (username = username_p));
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- Given a username, gets their password. 
+-- Used to check if login is valid
+DELIMITER $$
+CREATE PROCEDURE get_user_pass(IN username_p VARCHAR(50))
+BEGIN
+    SELECT lib_password FROM lib_user WHERE (username = username_p);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+
+-- Given a username, grabs user_id
+DELIMITER $$
+CREATE PROCEDURE get_user_id(IN username_p VARCHAR(50))
+BEGIN
+    SELECT user_id FROM lib_user WHERE (username = username_p);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+-- CALL get_user_id(1);
