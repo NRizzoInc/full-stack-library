@@ -59,6 +59,8 @@ class WebApp():
         self.createFormPages()
         self.createCheckoutPages()
 
+        # TODO: make a route for employees to add a new book to the library
+
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
         def createMainPage():
