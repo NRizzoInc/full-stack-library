@@ -162,6 +162,13 @@ class WebApp(UserManager):
             flash('Congratulations, you are now a registered user!')
             return redirect("/login")
 
+        @self._app.route("/logout", methods=["GET", "POST"])
+        @login_required
+        def logout():
+            logout_user()
+            flash("Successfully logged out!")
+            return redirect("/login")
+
     def printSites(self):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")
