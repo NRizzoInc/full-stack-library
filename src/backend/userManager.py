@@ -14,7 +14,7 @@ from flask_login import LoginManager
 
 #--------------------------------OUR DEPENDENCIES--------------------------------#
 from db_manager import DB_Manager
-# from user import User
+from user import User
 
 class UserManager(LoginManager, DB_Manager):
     def __init__(self, app: Flask, user:str, pwd:str, db:str):
@@ -48,9 +48,8 @@ class UserManager(LoginManager, DB_Manager):
                 \n@Param: user_id - The user's unique token id
                 \n@Return: Reference to the User class related to this userToken
             """
-            
-            # return self.findUserById(user_id, User)
-            pass
+            # create an object to hold the user's id & functions (ie checkout, return, etc)
+            return User(user_id)
 
         @self.unauthorized_handler
         def onNeedToLogIn():
