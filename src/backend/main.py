@@ -17,11 +17,13 @@ from pathlib import Path
 #--------------------------------Project Includes--------------------------------#
 from formManager import bookLookupForm
 from bookSearchTable import BookSearchTable, BookSearchCell
+from userManager import UserManager
 
-class WebApp():
-    def __init__(self, port, is_debug):
+class WebApp(UserManager):
+    def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
         self._app = Flask("LibraryDB")
         self._app.config["TEMPLATES_AUTO_RELOAD"] = True # refreshes flask if html files change
+        UserManager.__init__(self, self._app, user, pwd, db)
 
         # current dir
         backend_dir = Path(__file__).parent.resolve()
@@ -131,7 +133,29 @@ if __name__ == '__main__':
         default=True
     )
 
+    parser.add_argument(
+        "-u", "--username",
+        required=False,
+        default="root",
+        dest="user",
+        help="The username for the MySQL Database"
+    )
+    parser.add_argument(
+        "-pwd", "--password",
+        required=True,
+        default=None,
+        dest="pwd",
+        help="The password for the MySQL Database"
+    )
+    parser.add_argument(
+        "-d", "--db",
+        required=False,
+        default="libsystem",
+        dest="db_name",
+        help="The name of the database to connect to"
+    )
+
     # Actually Parse Flags (turn into dictionary)
     args = vars(parser.parse_args())
 
-    app = WebApp(args["port"], args['debugMode'])
+    app = WebApp(args["port"], args['debugMode'], args["user"], args["pwd"], args["db_name"])
