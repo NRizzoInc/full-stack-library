@@ -324,3 +324,40 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 -- CALL get_user_id(1);
+
+DELIMITER $$
+CREATE PROCEDURE insert_user(
+  IN fname VARCHAR(50),
+  IN lname VARCHAR(50),
+  IN dob DATE,
+  IN is_employee BOOLEAN,
+  IN username VARCHAR(50),
+  IN pwd VARCHAR(50)
+) BEGIN
+  INSERT INTO lib_user (user_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password)
+  -- user_id is auto increment, so specify default behavior
+  -- hash the password with MD5 & only ever do checks on the hash
+  VALUES(DEFAULT, fname, lname, dob, 0, is_employee, username, MD5(pwd));
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- password is stored in MD5 hash so have to hash given password to check against db
+DELIMITER $$
+CREATE PROCEDURE check_password(IN username VARCHAR(50), IN pwd VARCHAR(50))
+BEGIN
+  -- insert into @hash_pwd exec get_user_pass username;
+  -- SELECT lib_password FROM lib_user WHERE (username = username_p);
+  DECLARE is_pwd_match BOOLEAN;
+  DECLARE hashed_pwd VARCHAR(50);
+
+  SET hashed_pwd = (
+    SELECT lib_password FROM lib_user WHERE (username = username_p)
+  );
+
+  SET is_pwd_match = @hashed_pwd = MD5(pwd);
+  SELECT is_pwd_match;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
