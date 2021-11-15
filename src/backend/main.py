@@ -8,6 +8,7 @@ import logging # used to disable printing of each POST/GET request
 import pathlib
 from pathlib import Path
 import secrets
+import getpass
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
@@ -205,7 +206,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "-pwd", "--password",
-        required=True,
+        required=False, # but if not provided asks for input
         default=None,
         dest="pwd",
         help="The password for the MySQL Database"
@@ -214,11 +215,16 @@ if __name__ == '__main__':
         "-d", "--db",
         required=False,
         default="libsystem",
-        dest="db_name",
+        dest="db",
         help="The name of the database to connect to"
     )
 
     # Actually Parse Flags (turn into dictionary)
     args = vars(parser.parse_args())
 
-    app = WebApp(args["port"], args['debugMode'], args["user"], args["pwd"], args["db_name"])
+    # ask for input if password not given
+    if args["pwd"] == None:
+        args["pwd"] = getpass.getpass("Enter the password for the database '" + str(args["db"]) + "': ")
+
+    # start app
+    app = WebApp(args["port"], args['debugMode'], args["user"], args["pwd"], args["db"])
