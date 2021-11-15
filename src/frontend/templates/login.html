@@ -1,0 +1,25 @@
+<head>
+    <link rel="icon" href="../static/images/library_icon.png"> 
+    <title>{{ title }}</title>
+</head>
+
+<body>
+    {% include "flash.html" %}
+    <p>New User? <a href="/register">Click to Register!</a></p>
+    {% block content %}
+        <h1>Sign In</h1>
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            <p>
+                {{ form.username.label }}<br>
+                {{ form.username(size=32) }}
+            </p>
+            <p>
+                {{ form.password.label }}<br>
+                {{ form.password(size=32) }}
+            </p>
+            <p>{{ form.rememberMe() }} {{ form.rememberMe.label }}</p>
+            <p>{{ form.submit() }}</p>
+        </form>
+    {% endblock %}
+</body>

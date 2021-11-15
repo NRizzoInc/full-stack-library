@@ -1,0 +1,16 @@
+<head>
+    <link rel="icon" href="../static/images/library_icon.png"> 
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <!-- <h1>Alerts:</h1> -->
+        <ul class=flashes>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+</body>

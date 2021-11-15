@@ -5,25 +5,33 @@ import os, sys
 import webbrowser # allows opening of new tab on start
 import argparse # cli paths
 import logging # used to disable printing of each POST/GET request
+import pathlib
+from pathlib import Path
+import secrets
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
 from flask import Flask, templating, render_template, request, redirect, flash, url_for
 import werkzeug.serving # needed to make production worthy app that's secure
 
-import pathlib
-from pathlib import Path
+# decorate app.route with "@login_required" to make sure user is logged in before doing anything
+# https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader -- "flask_login.login_required"
+from flask_login import login_user, current_user, login_required, logout_user
+
 
 #--------------------------------Project Includes--------------------------------#
 from formManager import bookLookupForm
 from bookSearchTable import BookSearchTable, BookSearchCell
 from userManager import UserManager
+from registrationForm import RegistrationForm
+from loginForm import LoginForm
 
 class WebApp(UserManager):
     def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
         self._app = Flask("LibraryDB")
         self._app.config["TEMPLATES_AUTO_RELOAD"] = True # refreshes flask if html files change
-        UserManager.__init__(self, self._app, user, pwd, db)
+        self._app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
+        self.user_manager = UserManager(self._app, user, pwd, db)
 
         # current dir
         backend_dir = Path(__file__).parent.resolve()
@@ -60,6 +68,7 @@ class WebApp(UserManager):
         self.createLandingPage()
         self.createFormPages()
         self.createCheckoutPages()
+        self.createUserPages()
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
@@ -109,9 +118,56 @@ class WebApp(UserManager):
                                 book_title = title,
                                 due_date = _due_date)
 
+    def createUserPages(self):
+        # https://flask-login.readthedocs.io/en/latest/#login-example
+        @self._app.route("/login", methods=["GET", "POST"])
+        def login():
+            # dont login if already logged in
+            if current_user.is_authenticated:
+                return redirect("/")
+
+            form = LoginForm(self._app, self.user_manager)
+            if  not form.validate_on_submit():
+                # unsuccessful login
+                return render_template('login.html', title="LibraryDB Login", form=form)
+
+            # username & pwd must be right at this point, so login
+            user = self.getUserByUsername(username, User)
+            # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
+            # call loadUser() / @user_loader in userManager.py 
+            login_user(user, remember=form.rememberMe.data)
+
+            # route to original destination
+            next = flask.request.args.get('next')
+            isNextUrlBad = next == None or not is_safe_url(next, self._urls)
+            if isNextUrlBad:
+                return redirect("/")
+            else:
+                return redirect(next)
+
+            # on error, keep trying to login until correct
+            return redirect("/login")
+
+        @self._app.route("/register", methods=["GET", "POST"])
+        def register():
+            if current_user.is_authenticated: return redirect("/")
+
+            form = RegistrationForm(self._app, self.user_manager)
+            if not form.validate_on_submit():
+                # register/check username failed, retry
+                return render_template('registration.html', title='LibraryDB Registration', form=form)
+
+            # actually add user given info is valid/allowed
+            self.addUser(form.username.data, form.password.data)
+            flash('Congratulations, you are now a registered user!')
+            return redirect("/login")
+
     def printSites(self):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")
+        print(f"http://localhost:{self._port}/login")
+        print(f"http://localhost:{self._port}/checkout")
+        print(f"http://localhost:{self._port}/search_book")
 
 if __name__ == '__main__':
 
