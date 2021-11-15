@@ -1,5 +1,5 @@
 """
-    @file Responsible for handling the individual User class (which extends the emailAgent class)
+    @file Responsible for handling the individual User class
 """
 
 #------------------------------STANDARD DEPENDENCIES-----------------------------#
