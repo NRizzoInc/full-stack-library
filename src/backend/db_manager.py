@@ -12,7 +12,7 @@ class DB_Manager():
         """
             \n@param: user  - The username to connect to database with
             \n@param: pwd   - The password to connect to database with
-            \n@param: db    - The database to connect with
+            \n@param: db    - The name of the database to connect with
         """
         self.conn = pymysql.connect(
             host="localhost",
@@ -24,17 +24,56 @@ class DB_Manager():
         )
         self.cursor = self.conn.cursor()
 
-        self.call_track_char()
-
     def cleanup(self):
         self.cursor.close()
         self.conn.close()
 
-    def call_track_char(self):
-        self.cursor.execute('call track_character(%s)', 'Frodo')
-        for result in self.cursor.fetchall():
-            print(result)
+    def doesUsernameExist(self, username: str) -> bool():
+        self.cursor.execute("call does_username_exist(%s)", username)
+        return bool(self.cursor.fetchall()[0])
 
+    def getPwdFromUsername(self, username: str) -> str():
+        """(use checkPwdMatches) Returns the hashed password for a given username. Empty string if username does not exist"""
+
+        self.cursor.execute("call get_user_pass(%s)", username)
+        pwds = self.cursor.fetchall()
+        return pwds[0] if len(pwds) > 0 else ""
+
+    def checkPwdMatches(self, username: str, pwd: str) -> bool():
+        """Returns true if the hash of the passed password matches the stored hashed password"""
+        self.cursor.execute("call check_password(%s, %s)", username, pwd)
+        return bool(self.cursor.fetchall()[0])
+
+    def getUserIdFromUsername(self, username: str) -> int():
+        """Returns the id for a given username. -1 if username does not exist"""
+
+        self.cursor.execute("call get_user_id(%s)", username)
+        user_ids = self.cursor.fetchall()
+        return user_ids[0] if len(user_ids) > 0 else -1
+
+    def addUser(self,
+        fname: str,
+        lname: str,
+        dob: str,
+        is_employee: bool,
+        username: str,
+        pwd: str
+    ) -> int():
+        """Adds a user to the database. Return 1 if successful, -1 if username taken, else 0"""
+        if(doesUsernameExist(username)): return -1
+
+        num_rows = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s)",
+                            fname, lname, dob, is_employee, username, pwd)
+        # number of rows affected should = 1
+        return 1 if num_rows == 1 else 0
+
+    def removeUser(self, userToken):
+        """
+            \n@Brief: Remove a user
+            \n@Param: userToken - The user's unique token
+        """
+        # TODO: implement removing a user (delete row from table)
+        pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
@@ -57,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-d", "--db",
         required=False,
-        default="lotrfinal",
+        default="libsystem",
         dest="db_name",
         help="The name of the database to connect to"
     )
