@@ -18,7 +18,7 @@ print_flags () {
     echo "========================================================================================================================="
     echo "Helper utility to setup everything to use this repo"
     echo "========================================================================================================================="
-    echo "How to use:" 
+    echo "How to use:"
     echo "  To Start: ./setup.sh [flags]"
     echo "========================================================================================================================="
     echo "Available Flags (mutually exclusive):"
@@ -133,3 +133,5 @@ if [[ ${upgradePkgs} == true ]]; then
     echo "#3 Installing all packages"
     "${pipLocation}" install -r "${installDir}/requirements.txt"
 fi
+
+echo "Please run the start.sh or start.bat files at the top level of the project."
