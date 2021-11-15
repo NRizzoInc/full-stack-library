@@ -81,6 +81,7 @@ class WebApp():
                 url=url, result_table=search_table)
 
     def createCheckoutPages(self):
+        #TODO: make this a login required page (or at least have them login right now)
         @self._app.route('/checkout', methods=['POST', 'GET'])
         def checkout():
             title = request.args.get('book_title')
@@ -89,6 +90,7 @@ class WebApp():
             elif request.method == "POST":
                 # TODO: make a query / call procedure for checking out a book
                 print(f"Checking out book {title}")
+                # TODO: call procedure to verify user is part of the library system the book belongs to
                 # TODO: call checkout procedure and return to home
                 # TODO: have due_date be part of procedure results
                 # TODO: have success_status include if they're on hold or not + details
