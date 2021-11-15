@@ -19,12 +19,14 @@ Authors:
 1. Download [Python3.9](https://www.python.org/downloads/release/python-390/)
 2. Run setup scripts. Pick the correct one based on your operating system:
    * Windows: [install/setup.bat](install/setup.bat)
+     * Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
    * Linux/Windows Git-Bash: [install/setup.sh](install/setup.sh)
    * This handles the complete setup of a virtual environment with the correct libraries/packages for the project.
    * The virtual environment will live in `/cs3200-venv` relative to the top level of this project
    * Depending on the operating system, the exact location of the python interpreter will change. However, the start scripts will handle that, and you do not need to figure it out.
 3. Start the Server:
    * Windows: [start.bat](start.bat)
+     * Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
    * Linux/Windows Git-Bash: [start.sh](start.sh)
    * Each script will call `main.py` using the python virtual environment setup.
 4. Open the landing page to begin interacting with the Frontend / client side
