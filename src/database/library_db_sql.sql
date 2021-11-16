@@ -1,7 +1,7 @@
 -- Project Code 
 -- Last Updated: 2021/11/10
 
--- DROP DATABASE libsystem;
+DROP DATABASE IF EXISTS libsystem;
 
 CREATE DATABASE IF NOT EXISTS libSystem;
 USE libSystem;
@@ -50,6 +50,13 @@ CREATE TABLE lib_user
  username VARCHAR(50) NOT NULL,
  -- password used to login
  lib_password VARCHAR(50) NOT NULL
+ 
+ -- the id of the user's library card, a 14 digit number
+ -- lib_card_id INT NOT NULL
+ 
+ -- TODO, determine how to format the lib_card_id to always be 14 digits long
+ -- with leading zeros
+
 );
 
 
@@ -145,7 +152,7 @@ CREATE TABLE employee
  );
  
 -- Represents a hold on a book
--- DROP TABLE IF EXISTS holds;
+DROP TABLE IF EXISTS holds;
 CREATE TABLE holds
 (
  hold_id INT PRIMARY KEY NOT NULL,
@@ -167,7 +174,7 @@ CREATE TABLE holds
 
 
 
--- DROP TABLE IF EXISTS user_reg;
+DROP TABLE IF EXISTS user_reg;
 -- What library branch did a user register at?
 CREATE TABLE user_register
 (
@@ -184,7 +191,7 @@ CREATE TABLE user_register
 );
 
 
--- DROP TABLE IF EXSITS checked_out_books;
+DROP TABLE IF EXSITS checked_out_books;
 -- Represents the relationship of a user borrowing a book
 CREATE TABLE checked_out_books
 (
@@ -207,7 +214,7 @@ CREATE TABLE checked_out_books
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
--- DROP TABLE IF EXISTS user_hist;
+DROP TABLE IF EXISTS user_hist;
 -- Table representing the library history of users
 CREATE TABLE user_hist
 (
@@ -219,7 +226,7 @@ CREATE TABLE user_hist
   -- what library is the book checked out from?
  library_id INT NOT NULL,
  date_borrowed DATE NOT NULL,
- date_returned DATE,
+ date_returned DATE DEFAULT NULL,
 
  
  CONSTRAINT FK_hist_user
@@ -259,6 +266,11 @@ DELIMITER $$
 CREATE PROCEDURE available_hold_count(IN booktitle_p VARCHAR(50))
 BEGIN
   WITH 
+  -- the book title 
+  b_title AS(
+   SELECT title FROM book 
+    WHERE (title = booktitle_p)),
+  
   -- all copies of this book in the system
   copies_all AS(
    SELECT book_id FROM book 
@@ -284,13 +296,123 @@ BEGIN
    SELECT count(*) AS Number_On_Hold FROM holds 
      WHERE (holds.book_id = (SELECT * FROM copies_ALL LIMIT 1)))
    
-   SELECT Number_Available, Number_Checked_Out, Number_On_Hold
-    FROM num_copies_available, num_copies_checked_out, num_copies_on_hold;
+   SELECT b_title.title, Number_Available, Number_Checked_Out, Number_On_Hold
+    FROM b_title, num_copies_available, num_copies_checked_out, num_copies_on_hold;
    
 END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+-- Lists the library branch where each available copy of a book is located
+DELIMITER $$
+CREATE PROCEDURE get_book_location(IN booktitle_p VARCHAR(50))
+BEGIN
+ WITH 
+   -- all copies of this book in the system
+  copies_all AS(
+   SELECT * FROM book 
+    WHERE (title = booktitle_p)),
+  
+  -- all copies that are checked out
+  copies_checked_out AS(
+   SELECT * FROM checked_out_books 
+     WHERE book_id IN (SELECT * FROM all_copies)),
+ 
+ -- all books in the system that are NOT checked out
+   copies_available AS(
+   SELECT * FROM copies_all 
+    WHERE (book_id.copies_all NOT IN (SELECT * FROM copies_checked_out))),
+ 
+ 
+ -- This is redundant, but I don't want to delete it in case I need it later
+ -- The bookcase that a bookshelf is on
+ --   bookshelf_loc AS (
+ --   SELECT bookcase_id FROM bookshelf
+ --    WHERE (bookshelf.booksheld_id IN (SELECT * FROM copies_available))),
+    
+ -- The library that a bookcase in in
+ -- lib_loc AS (
+ --  SELECT library_id, library_name FROM library
+ --   WHERE (library.library_id IN (SELECT * FROM bookshelf_loc))),
+ 
+ -- joining the copies_available and bookcase_id from bookshelf table
+  copies_available_bs AS (
+  SELECT title, copies_available.bookshelf_id, bookshelf.bookcase_id 
+   FROM copies_available JOIN bookshelf
+   USING (bookshelf_id)),
+   
+   -- joining copies_available_bs and library name from library table
+   copies_available_lib AS (
+   SELECT copies_available_bs.title, copies_available_bs.bookshelf_id, 
+            copies_available_bs.bookcase_id,
+            library.library_name
+    FROM copies_available_bs JOIN library
+    USING (library_id))
+ 
+ -- This should contain the book title, the bookshelf_id, bookcase_id, and library name
+ -- of the available copies of the desired book
+ SELECT * FROM copies_available_lib;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- checking out a book given a book_id and user_id
+-- Adds the book to the "checked out book" table, 
+-- returns the due date
+-- Adds book to the user's history
+DELIMITER $$
+CREATE PROCEDURE check_out(IN book_id_p INT, IN user_id_p INT)
+BEGIN
+ DECLARE checkout_length_days INT;
+ DECLARE library_book_ID INT;
+ 
+ SET checkout_length_days = 
+   (SELECT checkout_length_days FROM book 
+    WHERE book_id = book_id_p);
+  
+  -- Adds the book to the check_out_books table
+   INSERT INTO checked_out_books
+   VALUES (user_id_p, book_id_p, CURDATE());
+   
+   -- The due date of the book is:
+   SELECT DATE(CURDAT() + checkout_length_days) AS "The book is due: ";
+ 
+ SET library_book_ID = (
+    SELECT library_id FROM library
+    WHERE library.library_id IN 
+    (SELECT bookcase_id FROM bookshelf
+     WHERE (bookshelf.booksheld_id IN (SELECT * FROM book WHERE book_id = book_id_p))));
+ 
+   -- Adding the checkout into the user_hist table
+   INSERT INTO user_hist
+   VALUES (DEFAULT, user_id_p, book_id_p, library_book_ID, 
+        CURDATE(), DEFAULT);
+END $$
+
+
+-- returns a book to the library
+DELIMITER $$
+CREATE PROCEDURE return_book(IN book_id_p INT, IN user_id_p INT)
+BEGIN
+ 
+ -- Adds the return date to the user_Hist
+UPDATE user_hist
+ SET date_returned =CURDATE()
+ WHERE ((user_id_p = user_id) AND 
+        (book_id_p = book_id));
+ 
+ -- Delete row from checked_out_Books
+ DELETE FROM checked_out_books 
+  WHERE ((user_id_p = user_id) AND 
+        (book_id_p = book_id));
+ -- TODO how to handle a user who has placed a hold on the book being checked in
+ -- SELECT * FROM holds WHERE (book_id_p = 
+ 
+ -- We will register the user to whatever copy of the book that has been checked out
+ -- for the longest period of time, assuming that it will be the next copy returned
+ 
+END $$
 
 -- Given a username, returns true (1) if username is not currently used
 -- false (0) if not used
@@ -324,6 +446,21 @@ END $$
 DELIMITER ;
 -- CALL get_user_id(1);
 
+
+-- Do I need to hash this?
+-- updates a user's password
+DELIMITER $$
+CREATE PROCEDURE update_pwd(IN username_p VARCHAR(50), IN pwd_p VARCHAR(50))
+BEGIN
+ UPDATE lib_user
+ SET lib_password = MD5(pwd_p)
+ WHERE username = username_p;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- Inserts a new user into the DB
 DELIMITER $$
 CREATE PROCEDURE insert_user(
   IN fname VARCHAR(50),
