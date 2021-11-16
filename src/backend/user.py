@@ -16,7 +16,6 @@ class User(UserMixin):
             \n@Brief: Initializes a User with the most basic info needed
             \n@Param: userId - The user's unique id
         """
-        UserMixin().__init__()
         # store the user's id for use when object is accessed (via 'current_user')
         # they can use the id for more queries
         self.id = userId

@@ -1,15 +1,20 @@
 <head>
     <link rel="icon" href="../static/images/library_icon.png"> 
+    <style>
+        .flash-err {
+            color: red;
+        }
+    </style>
 </head>
 <body>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
         <!-- <h1>Alerts:</h1> -->
-        <ul class=flashes>
+        <div class="flash-err flash">
             {% for message in messages %}
-                <li>{{ message }}</li>
+                [ {{ message }} ]
             {% endfor %}
-        </ul>
+        </div>
         {% endif %}
     {% endwith %}
     {% block body %}{% endblock %}

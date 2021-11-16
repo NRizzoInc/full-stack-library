@@ -1,7 +1,7 @@
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import StopValidation, DataRequired
+from wtforms.validators import ValidationError, StopValidation, DataRequired
 from flask import flash, Flask
 
 #--------------------------------OUR DEPENDENCIES--------------------------------#
@@ -18,16 +18,17 @@ class LoginForm(FlaskForm, UserManager):
 
     def __init__(self, flaskApp: Flask, user_manager: UserManager, *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
-        self.user_manager = UserManager
+        self.user_manager = user_manager
         cls = self.__class__ # get reference to cls
         cls.username = StringField('Username', validators=[DataRequired()])
         cls.password = PasswordField('Password',  validators=[DataRequired(), self.checkUsername, self.checkPwd])
 
     def checkPwd(self, form, field) -> bool():
-        if self.user_manager.checkPwdMatches(form.username.data, form.password.data):
+        """Returns True if successful, otherwise raise ValidationError which shows on screen"""
+        if not self.user_manager.checkPwdMatches(form.username.data, form.password.data):
             errMsg = "Invalid username or password"
-            flash(errMsg)
-            raise StopValidation(message=errMsg)
+            # flash(errMsg)
+            raise ValidationError(message=errMsg) # prints under box
         else:
             return True
 
@@ -40,6 +41,6 @@ class LoginForm(FlaskForm, UserManager):
         if not self.user_manager.doesUsernameExist(form.username.data):
             errMsg = "Invalid username or password"
             flash(errMsg)
-            raise StopValidation(message=errMsg)
+            raise StopValidation(message=errMsg) # prints under box
         else:
             return True

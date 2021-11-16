@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS library;
 -- A user in the library system
 CREATE TABLE lib_user
 (
- user_id INT PRIMARY KEY NOT NULL,
+ user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
  first_name VARCHAR(50) NOT NULL,
  last_name VARCHAR(50) NOT NULL,
  dob DATE NOT NULL,
@@ -297,11 +297,10 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE does_username_exist(IN username_p VARCHAR(50))
 BEGIN
-   SELECT EXISTS(SELECT username FROM lib_user WHERE (username = username_p));
+   SELECT EXISTS(SELECT username FROM lib_user WHERE (username = username_p)) AS username_exists;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
-
 
 -- Given a username, gets their password. 
 -- Used to check if login is valid
@@ -342,10 +341,9 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
-
 -- password is stored in MD5 hash so have to hash given password to check against db
 DELIMITER $$
-CREATE PROCEDURE check_password(IN username VARCHAR(50), IN pwd VARCHAR(50))
+CREATE PROCEDURE check_password(IN username_to_test VARCHAR(50), IN pwd VARCHAR(50))
 BEGIN
   -- insert into @hash_pwd exec get_user_pass username;
   -- SELECT lib_password FROM lib_user WHERE (username = username_p);
@@ -353,10 +351,10 @@ BEGIN
   DECLARE hashed_pwd VARCHAR(50);
 
   SET hashed_pwd = (
-    SELECT lib_password FROM lib_user WHERE (username = username_p)
+    SELECT lib_password FROM lib_user WHERE (username = username_to_test)
   );
 
-  SET is_pwd_match = @hashed_pwd = MD5(pwd);
+  SET is_pwd_match = hashed_pwd = MD5(pwd);
   SELECT is_pwd_match;
 END $$
 -- resets the DELIMETER

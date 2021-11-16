@@ -9,6 +9,35 @@
     <form action="" method="post">
         {{ form.hidden_tag() }}
         <p>
+            {{ form.fname.label }}<br>
+            {{ form.fname(size=32) }}<br>
+            {% for error in form.fname.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.lname.label }}<br>
+            {{ form.lname(size=32) }}<br>
+            {% for error in form.lname.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.dob.label }}<br>
+            {{ form.dob(size=32) }}<br>
+            {% for error in form.dob.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.is_employee.label }}
+            {{ form.is_employee(size=32) }}<br>
+            {% for error in form.is_employee.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
             {{ form.username.label }}<br>
             {{ form.username(size=32) }}<br>
             {% for error in form.username.errors %}

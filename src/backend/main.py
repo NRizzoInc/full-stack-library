@@ -23,6 +23,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 #--------------------------------Project Includes--------------------------------#
 from formManager import bookLookupForm
 from bookSearchTable import BookSearchTable, BookSearchCell
+from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
 from loginForm import LoginForm
@@ -32,7 +33,9 @@ class WebApp(UserManager):
         self._app = Flask("LibraryDB")
         self._app.config["TEMPLATES_AUTO_RELOAD"] = True # refreshes flask if html files change
         self._app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
-        self.user_manager = UserManager(self._app, user, pwd, db)
+
+        # Inheret all functions and 'self' variables (UserManager)
+        UserManager.__init__(self, self._app, user, pwd, db)
 
         # current dir
         backend_dir = Path(__file__).parent.resolve()
@@ -94,6 +97,7 @@ class WebApp(UserManager):
 
     def createCheckoutPages(self):
         @self._app.route('/checkout', methods=['POST', 'GET'])
+        @login_required
         def checkout():
             title = request.args.get('book_title')
             if request.method == 'GET':
@@ -110,6 +114,7 @@ class WebApp(UserManager):
                     due_date="Sept 20, 2022"))
 
         @self._app.route('/checkoutResult', methods=['GET'])
+        @login_required
         def checkoutResult():
             title = request.args.get('book_title')
             _due_date = request.args.get('due_date')
@@ -127,15 +132,17 @@ class WebApp(UserManager):
             if current_user.is_authenticated:
                 return redirect("/")
 
-            form = LoginForm(self._app, self.user_manager)
-            if  not form.validate_on_submit():
+            # to provide UserManager, use self which is a child of it
+            form = LoginForm(self._app, self)
+            if not form.validate_on_submit():
                 # unsuccessful login
                 return render_template('login.html', title="LibraryDB Login", form=form)
 
             # username & pwd must be right at this point, so login
-            user = self.getUserByUsername(username, User)
             # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
             # call loadUser() / @user_loader in userManager.py 
+            user_id = self.getUserIdFromUsername(form.username.data)
+            user = User(user_id)
             login_user(user, remember=form.rememberMe.data)
 
             # route to original destination
@@ -152,16 +159,31 @@ class WebApp(UserManager):
         @self._app.route("/register", methods=["GET", "POST"])
         def register():
             if current_user.is_authenticated: return redirect("/")
+            # make the form for both GET & POST (to show and parse respectively)
+            form = RegistrationForm(self._app, user_manager=self)
 
-            form = RegistrationForm(self._app, self.user_manager)
-            if not form.validate_on_submit():
-                # register/check username failed, retry
-                return render_template('registration.html', title='LibraryDB Registration', form=form)
+            if request.method == "POST" and form.validate_on_submit():
+                # actually add user given info is valid/allowed
+                add_res = self.addUser(
+                    form.fname.data,
+                    form.lname.data,
+                    form.dob.data,
+                    form.is_employee.data,
+                    form.username.data,
+                    form.password.data
+                )
+                if (add_res == -1):
+                    flash("Username already taken")
+                elif (add_res == 1):
+                    flash('Congratulations, you are now a registered user!')
+                    return redirect(url_for("login"))
+                elif (add_res == 0):
+                    flash('Registration Failed!')
+            elif request.method == "POST":
+                print("Validation Failed")
 
-            # actually add user given info is valid/allowed
-            self.addUser(form.username.data, form.password.data)
-            flash('Congratulations, you are now a registered user!')
-            return redirect("/login")
+            # on GET or failure, reload
+            return render_template('registration.html', title='LibraryDB Registration', form=form)
 
         @self._app.route("/logout", methods=["GET", "POST"])
         @login_required
@@ -174,6 +196,8 @@ class WebApp(UserManager):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")
         print(f"http://localhost:{self._port}/login")
+        print(f"http://localhost:{self._port}/register")
+        print(f"http://localhost:{self._port}/logout")
         print(f"http://localhost:{self._port}/checkout")
         print(f"http://localhost:{self._port}/search_book")
 
@@ -190,11 +214,19 @@ if __name__ == '__main__':
 
     # defaults debugMode to false (only true if flag exists)
     parser.add_argument(
-        "--debugMode",
+        "--debugModeOn",
         action="store_true",
+        dest="debugMode",
         required=False,
         help="Use debug mode for development environments",
         default=True
+    )
+    parser.add_argument(
+        "--debugModeOff",
+        action="store_false",
+        dest="debugMode",
+        required=False,
+        help="Dont use debug mode for development environments",
     )
 
     parser.add_argument(
@@ -227,4 +259,4 @@ if __name__ == '__main__':
         args["pwd"] = getpass.getpass("Enter the password for the database '" + str(args["db"]) + "': ")
 
     # start app
-    app = WebApp(args["port"], args['debugMode'], args["user"], args["pwd"], args["db"])
+    app = WebApp(args["port"], args["debugMode"], args["user"], args["pwd"], args["db"])
