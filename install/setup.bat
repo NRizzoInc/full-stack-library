@@ -26,18 +26,18 @@ RMDIR /S /Q %virtualEnvironDir%
 py -3.9 -m venv %virtualEnvironDir%
 
 @echo #1.3 Getting Path to Virtual Environment's Python
-set pythonLocation=%virtualEnvironDir%/Scripts/python.exe
+set pythonLocation=%virtualEnvironDir%\Scripts\python.exe
 @echo -- pythonLocation: %pythonLocation%
-set pipLocation=%virtualEnvironDir%/Scripts/pip3.exe
+set pipLocation=%virtualEnvironDir%\Scripts\pip3.exe
 
 @echo #2 Upgrading pip to latest
 %pythonLocation% -m pip install --upgrade pip
 
 :: Download / Setup the venv with the right modules
 @echo #3 Installing all packages
-%pipLocation% install -r %installDir%/requirements.txt
+%pipLocation% install -r %installDir%\requirements.txt
 
-%virtualEnvironDir%/Scripts/deactivate
+%virtualEnvironDir%\Scripts\deactivate
 
 @echo Install & Setup of the virtual environment for this project is done.
 @echo Please run the start.sh or start.bat files at the top level of the project.
