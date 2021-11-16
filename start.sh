@@ -38,6 +38,8 @@ print_flags () {
     echo "=========================================================================================================="
 }
 
+# use "$@" to pass on all parameter the same way to python script
+ARGS=$@
 # parse command line args
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -59,6 +61,5 @@ else
 fi
 
 
-# use "$@" to pass on all parameter the same way to python script
 echo "Starting Program ${executePath}"
-"${venvPath}" "${executePath}" "$@"
+"${venvPath}" "${executePath}" $ARGS

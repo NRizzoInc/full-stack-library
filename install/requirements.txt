@@ -7,3 +7,4 @@ mysql-connector-python==8.0.27
 Werkzeug==1.0.1
 pymysql==1.0.2
 flask-Table==0.5.0
+is-safe-url==1.0
