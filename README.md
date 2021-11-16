@@ -36,3 +36,6 @@ Authors:
 4. Open the landing page to begin interacting with the Frontend / client side
    1. `http://localhost:8080/`
    2. When the server starts it will also print this url in case port 8080 is taken
+5. **NOTE On Windows:**
+   1. The first time the program is run, Windows Firewall might block the application, please click "Allow Access". This issue should not happen again.
+   2. When ending the program please do `Ctrl+C` then respond to `Terminate batch job (Y/N)?` with `y` and click enter.
