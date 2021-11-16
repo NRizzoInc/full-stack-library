@@ -22,7 +22,8 @@ RMDIR /S /Q %virtualEnvironDir%
 
 @echo #1.2: Creating Virtual Environment
 :: This will automatically activate the venv
-py -3 -m venv %virtualEnvironDir%
+:: Specify the version (that should've been downloaded based on README instructions)
+py -3.9 -m venv %virtualEnvironDir%
 
 @echo #1.3 Getting Path to Virtual Environment's Python
 set pythonLocation=%virtualEnvironDir%/Scripts/python.exe

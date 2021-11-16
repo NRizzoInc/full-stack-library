@@ -9,6 +9,7 @@ Set executePath=%root_dir%src\backend\main.py
 Set virtualEnvironDir=%root_dir%%virtualEnvironName%
 Set venvPath=%virtualEnvironDir%\Scripts\python.exe
 
+echo %venvPath%
 
 echo Starting Program %executePath%
 %venvPath% %executePath% %*
