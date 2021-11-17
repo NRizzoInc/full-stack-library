@@ -61,7 +61,8 @@ class WebApp(UserManager):
         # create routes
         self.generateRoutes()
 
-        self._app.run(host=self._host, port=self._port, debug=self._is_debug)
+        # dont thread so requests dont happen concurrently
+        self._app.run(host=self._host, port=self._port, debug=self._is_debug, threaded=False)
         # FOR PRODUCTION
         # werkzeug.serving.run_simple(
         #     hostname=self._host, port=self._port,
