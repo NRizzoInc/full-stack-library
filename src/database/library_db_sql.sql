@@ -459,12 +459,15 @@ UPDATE user_hist
                 ORDER BY hold_start_date ASC LIMIT 1)
             , book_id_p, CURDATE());
       
-      -- Updates user_hist
+      -- Updates user_hist 
     INSERT INTO user_hist
-    VALUES (DEFAULT, user_id_p, book_id_p, book_library_id
+    VALUES (DEFAULT, 
+            (SELECT user_id FROM holds 
+                WHERE (book_id_p = book_id) 
+                ORDER BY hold_start_date ASC LIMIT 1)
+            , book_id_p, book_library_id
     , CURDATE(), null);
   
-        
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
  END IF;
