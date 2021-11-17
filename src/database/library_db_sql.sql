@@ -191,7 +191,7 @@ CREATE TABLE user_register
 );
 
 
-DROP TABLE IF EXSITS checked_out_books;
+DROP TABLE IF EXISTS checked_out_books;
 -- Represents the relationship of a user borrowing a book
 CREATE TABLE checked_out_books
 (
@@ -260,6 +260,42 @@ CONSTRAINT FK_hist_library
  --    WHERE (bc_locator.bookcase_id = bookcase.library_id)),
 
 
+
+-- Given a book_id, returns the library_id of where it is located
+DELIMITER $$
+CREATE FUNCTION library_id_from_book(book_id_p INT)
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN 
+ DECLARE library_id_out INT;
+ WITH desired_book AS(
+   SELECT * FROM book 
+    WHERE (book_id = book_id_p)),
+
+ -- joining the desired_book and bookcase_id from bookshelf table
+  desired_book_bs AS (
+  SELECT title, desired_book.bookshelf_id, bookshelf.bookcase_id 
+   FROM desired_book JOIN bookshelf
+   USING (bookshelf_id)),
+   
+   -- joining desired_book_bs and library_name/ library_id from library table
+   desired_book_lib AS (
+   SELECT desired_book_bs.title, desired_book_bs.bookshelf_id, 
+            desired_book_bs.bookcase_id,
+            library.library_name,
+            library.library_id
+    FROM desired_book_bs JOIN library
+    USING (library_id))
+    
+    SELECT library_id INTO library_id_out FROM desired_book_lib;
+ 
+ RETURN(library_id_out);
+END $$
+DELIMITER ;
+
+
+-- CALL book_library_locator(id in);
 
 -- Takes book title, returns # of copies available, # checked out, and # on hold
 DELIMITER $$
@@ -367,6 +403,7 @@ BEGIN
  DECLARE checkout_length_days INT;
  DECLARE library_book_ID INT;
  
+ 
  SET checkout_length_days = 
    (SELECT checkout_length_days FROM book 
     WHERE book_id = book_id_p);
@@ -395,7 +432,11 @@ END $$
 DELIMITER $$
 CREATE PROCEDURE return_book(IN book_id_p INT, IN user_id_p INT)
 BEGIN
- 
+DECLARE book_library_id INT;
+-- A function to get the library_id for a specific book
+SELECT library_id_from_book(book_id_P) INTO book_library_id;
+
+
  -- Adds the return date to the user_Hist
 UPDATE user_hist
  SET date_returned =CURDATE()
@@ -409,9 +450,24 @@ UPDATE user_hist
  -- TODO how to handle a user who has placed a hold on the book being checked in
  -- SELECT * FROM holds WHERE (book_id_p = 
  
+ -- Checks out the book for the next person on hold, if one exists 
+ -- Otherwise, the book is return and ready to be checked out by whomever else wants it
+ IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
+     INSERT INTO checked_out_books 
+     VALUES ((SELECT user_id FROM holds 
+                WHERE (book_id_p = book_id) 
+                ORDER BY hold_start_date ASC LIMIT 1)
+            , book_id_p, CURDATE());
+      
+      -- Updates user_hist
+    INSERT INTO user_hist
+    VALUES (DEFAULT, user_id_p, book_id_p, book_library_id
+    , CURDATE(), null);
+  
+        
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
- 
+ END IF;
 END $$
 
 -- Given a username, returns true (1) if username is not currently used
