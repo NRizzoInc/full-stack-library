@@ -36,15 +36,3 @@ CALL add_bookcase(5, 0, 999);
 CALL add_bookshelf(5, 0, 599);
 CALL add_bookshelf(5, 600, 999);
 
-SELECT bookcase.bookcase_id, bookcase.dewey_min, bookcase.dewey_max FROM (
-        -- Get the bookcase(s) this shelf could belong to in the library
-        SELECT bookcase_id, bookcase.dewey_min, bookcase.dewey_max FROM bookcase WHERE library_id = 1
-        ) getBookcasesID
-        -- Get all bookcases in the library and their shelve
-        RIGHT JOIN bookcase
-        ON getBookcasesID.bookcase_id = bookcase.bookcase_id
-        -- Find the bookcases in the library that fit the dewey ranges
-        WHERE 0 >= getBookcasesID.dewey_min AND 500 <= getBookcasesID.dewey_max
-        ORDER BY bookcase.bookcase_id DESC
-        LIMIT 1;
-

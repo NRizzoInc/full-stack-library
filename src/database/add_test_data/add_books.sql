@@ -12,3 +12,15 @@
 -- Have 20 books. Spread them across 2 library systems.
 --      Have them in 3 libraries total. 2 of the libraries should be in the same system.
 --      Some of the books (in the same system) should have the same name.
+
+CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
+    -- This only works bc custom data, change eventually
+    1,
+    "978-0-13-294326-0",
+    "Thomas Connolly and Carolyn Begg",
+    "Pearson",
+    false,
+    1442,
+    14,
+    005.74,
+    .5);

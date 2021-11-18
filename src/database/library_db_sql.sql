@@ -130,7 +130,7 @@ CREATE TABLE employee
  CREATE TABLE book 
  (
   book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  isbn INT NOT NULL,
+  isbn VARCHAR(75) NOT NULL,
   title VARCHAR(200) NOT NULL,
   author VARCHAR(100) NOT NULL,
   publisher VARCHAR(100),
@@ -519,19 +519,37 @@ DELIMITER ;
 
 
 -- Inserts a new user into the DB
+DROP PROCEDURE IF EXISTS insert_user;
 DELIMITER $$
 CREATE PROCEDURE insert_user(
   IN fname VARCHAR(50),
   IN lname VARCHAR(50),
+  -- In python, call a procedure to get the library id given its name
+  IN in_library_id INT,
   IN dob DATE,
   IN is_employee BOOLEAN,
   IN username VARCHAR(50),
   IN pwd VARCHAR(50)
 ) BEGIN
+  DECLARE new_user_id INT;
+  -- in case insert into lib_user fails, start a transaction that can rollback other insertions
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      ROLLBACK;
+  END;
+  START TRANSACTION;
+
+  -- insert into lib_user
   INSERT INTO lib_user (user_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password)
   -- user_id is auto increment, so specify default behavior
-  -- hash the password with MD5 & only ever do checks on the hash
+  -- hash the password with MD5 & only ever do checks on the hash (no plaintext passwords)
   VALUES(DEFAULT, fname, lname, dob, 0, is_employee, username, MD5(pwd));
+  SET new_user_id = LAST_INSERT_ID();
+  
+  -- insert into user_register
+  INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
+  
+    
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -555,22 +573,60 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DELIMITER //
+CREATE FUNCTION get_bookshelf_from_dewey (in_dewey_num FLOAT, in_lib_id INT)
+RETURNS INT
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE correct_case_id INT;
+    DECLARE shelf_id_for_dewey INT;
+    -- Get the bookcase in the library that fits the dewey number
+    SELECT bookcase_id INTO correct_case_id
+        FROM bookcase 
+        WHERE library_id = in_lib_id 
+            AND in_dewey_num >= dewey_min 
+            AND in_dewey_num <= dewey_max;
+                
+    -- Get the specific shelf within that case that works for the given dewey number
+    SELECT bookshelf_id INTO shelf_id_for_dewey
+        FROM bookshelf
+        WHERE bookcase_id = correct_case_id
+            AND in_dewey_num >= dewey_min 
+            AND in_dewey_num <= dewey_max
+        -- Put it in the lowest possible shelf
+        ORDER BY bookcase_id ASC
+        LIMIT 1;
+    
+    return (shelf_id_for_dewey);
+END //
+
 
 DELIMITER $$
-CREATE PROCEDURE add_new_book(IN title VARCHAR(200),
-    IN library_id INT,
-    IN isbn INT,
-    IN author VARCHAR(100),
-    IN publisher VARCHAR(100),
-    IN is_audio_book BOOL,
-    IN num_pages INT,
-    IN checkout_length_days INT,
-    IN book_dewey FLOAT,
-    IN late_fee_per_day FLOAT)
+CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
+    -- PRECONDITION: backend code uses get_users_lib_id to get their library_id BEFORE this procedure
+    IN in_lib_id INT,
+    IN in_isbn VARCHAR(75),
+    IN in_author VARCHAR(100),
+    IN in_publisher VARCHAR(100),
+    IN in_is_audio_book BOOL,
+    IN in_num_pages INT,
+    IN in_checkout_length_days INT,
+    IN in_book_dewey FLOAT,
+    IN in_late_fee_per_day FLOAT)
 BEGIN
-    -- Take the input of library_id because it is assumed an employee (with a library Fk) is adding the book.
+    DECLARE placement_bookshelf_id INT;
     -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
-    SELECT * FROM books;
+    -- NOTE: in a lot of cases the Dewey Number is an estimate. 
+    -- Real data domain experts would be needed to provide the exact dewey numbers
+    -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
+    -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
+    SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
+    
+    INSERT INTO book (isbn, title, author, publisher, is_audio_book, 
+        num_pages, checkout_length_days, late_fee_per_day, bookshelf_id)
+    VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, 
+        in_num_pages, in_checkout_length_days, in_late_fee_per_day, placement_bookshelf_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -697,3 +753,71 @@ DELIMITER ;
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
+-- ##### ADD Library Systems ####
+INSERT INTO library_system (library_sys_name) VALUES
+    ("Metro Boston Library Network"),
+    ("Old Colony Library Network"),
+    ("Minuteman Library Network");
+
+-- ##### ADD Library's ####
+-- Add a few libraries. Have 5 libraries spread across 2 library systems.
+
+-- Metro Boston Library locations come from here:
+-- https://bpl.bibliocommons.com/locations/
+-- Simplifying hours of operation to weekdays
+CALL add_library("Metro Boston Library Network", "Charlestown",
+        "179 Main St Charlestown, MA 02129", '10:00', '18:00', 5);
+CALL add_library("Metro Boston Library Network", "Central Library in Copley Square",
+        "700 Boylston Street Boston, MA 02116", '10:00', '8:00', 5);
+CALL add_library("Metro Boston Library Network", "Jamaica Plain",
+        "30 South Street Jamaica Plain, MA 02130", '10:00', '6:00', 5);
+-- Reference: https://catalog.ocln.org/client/en_US/ocln/?rm=LIBRARY+LOCATI1%7C%7C%7C1%7C%7C%7C3%7C%7C%7Ctrue
+CALL add_library("Old Colony Library Network", "Plymouth Public Library",
+        "132 South Street Plymouth, MA 02360", '10:00', '9:00', 8);
+CALL add_library("Old Colony Library Network", "Kingston Public Library",
+        "6 Green Street Kingston, MA 02364", '10:00', '5:00', 4);
+
+-- ##### ADD BOOKCASES AND BOOKSHELVES ####
+CALL add_bookcase(1, 000, 999);
+CALL add_bookshelf(1, 000, 499);
+CALL add_bookshelf(1, 500, 999);
+
+-- Make central library have 2 book cases. Each has multiple shelves.
+CALL add_bookcase(2, 0, 499);
+CALL add_bookshelf(2, 0, 299);
+CALL add_bookshelf(2, 300, 399);
+CALL add_bookshelf(2, 400, 499);
+CALL add_bookcase(2, 500, 999);
+CALL add_bookshelf(2, 500, 750);
+CALL add_bookshelf(2, 751, 999);
+
+CALL add_bookcase(3, 0, 999);
+CALL add_bookshelf(3, 0, 199);
+CALL add_bookshelf(3, 200, 399);
+CALL add_bookshelf(3, 400, 599);
+CALL add_bookshelf(3, 600, 999);
+
+CALL add_bookcase(4, 0, 999);
+CALL add_bookshelf(4, 0, 499);
+CALL add_bookshelf(4, 500, 999);
+
+CALL add_bookcase(5, 0, 999);
+CALL add_bookshelf(5, 0, 599);
+CALL add_bookshelf(5, 600, 999);
+
+-- ##### ADD A User & Employee ####
+CALL insert_user("employee",
+  "dummy",
+  1,
+  CURDATE(),
+  true,
+  "test_employee",
+  "fakePWD1234");
+  
+  CALL insert_user("employee2",
+  "dummy2",
+  2,
+  CURDATE(),
+  true,
+  "test_employee2",
+  "fakePWD1234");
