@@ -22,7 +22,7 @@ DROP TABLE IF EXISTS library;
   library_system INT NOT NULL,
   library_name VARCHAR(100) NOT NULL,
   address VARCHAR(100),
-  hours_of_operation int,
+  hours_of_operation VARCHAR(40),
   -- how many books can an individual check out of THIS branch at one time
   -- The default is 1 book per user
   max_concurrently_borrowed INT NOT NULL DEFAULT 1,
