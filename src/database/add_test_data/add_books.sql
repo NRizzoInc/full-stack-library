@@ -24,3 +24,5 @@ CALL add_new_book("Database Systems - A Practical Approach to Design, Implementa
     14,
     005.74,
     .5);
+
+SELECT get_lib_id_from_name('Central Library in Copley Square', 'Metro Boston Library');

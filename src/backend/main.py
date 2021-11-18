@@ -144,7 +144,7 @@ class WebApp(UserManager):
 
             # username & pwd must be right at this point, so login
             # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
-            # call loadUser() / @user_loader in userManager.py 
+            # call loadUser() / @user_loader in userManager.py
             user_id = self.getUserIdFromUsername(form.username.data)
             user = User(user_id)
             login_user(user, remember=form.rememberMe.data)
@@ -167,10 +167,14 @@ class WebApp(UserManager):
             form = RegistrationForm(self._app, user_manager=self)
 
             if request.method == "POST" and form.validate_on_submit():
+                # Get the library id
+                library_id = self.get_lib_id_from_name(form.lib_name.data, form.lib_sys_name.data)
+
                 # actually add user given info is valid/allowed
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
+                    library_id,
                     form.dob.data,
                     form.is_employee.data,
                     form.username.data,

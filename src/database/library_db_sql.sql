@@ -345,6 +345,7 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE get_book_location(IN booktitle_p VARCHAR(50))
 BEGIN
+-- This cannot be a function because a table is returned
  WITH 
    -- all copies of this book in the system
   copies_all AS(
@@ -496,13 +497,18 @@ DELIMITER ;
 
 -- Given a username, grabs user_id
 DELIMITER $$
-CREATE PROCEDURE get_user_id(IN username_p VARCHAR(50))
+CREATE FUNCTION get_user_id(username_p VARCHAR(50))
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
 BEGIN
-    SELECT user_id FROM lib_user WHERE (username = username_p);
+    DECLARE found_user_id INT;
+    SELECT user_id INTO found_user_id FROM lib_user WHERE (username = username_p) LIMIT 1;
+    RETURN (found_user_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
--- CALL get_user_id(1);
+-- SELECT get_user_id(1);
 
 
 -- Do I need to hash this?
@@ -737,19 +743,103 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-CREATE PROCEDURE get_users_lib_id(IN in_user_id INT)
+CREATE FUNCTION get_users_lib_id(in_user_id INT)
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
 BEGIN
-  -- GIVEN: a user's id, return the id of the library they belong to
+    DECLARE library_id_out INT;
+    -- GIVEN: a user's id, return the id of the library they belong to
   
   -- The backend side will have the user's id,
   -- so this procedure makes it very easy to get the library they belong to
-  SELECT library_id 
+  SELECT library_id INTO library_id_out
     FROM user_register
     WHERE in_user_id = user_id;
+    
+    RETURN(library_id_out);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DELIMITER $$
+CREATE FUNCTION get_lib_id_from_name(in_lib_name VARCHAR(100), in_lib_sys_name VARCHAR(100))
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE library_id_out INT;
+    -- GIVEN: a user's id, return the id of the library they belong to
+  
+  -- The backend side will have the user's id,
+  -- so this procedure makes it very easy to get the library they belong to
+  SELECT library_id INTO library_id_out
+    FROM library
+    WHERE library_name = in_lib_name /*AND in_lib_sys_name = library_system*/;
+    
+    RETURN(library_id_out);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE get_all_libraries()
+BEGIN
+  -- Needed for validation of register. Can't be function because multiple rows returned
+  SELECT library_id, library_name FROM library;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE get_all_library_systems()
+BEGIN
+  -- Needed for validation of register. Can't be function because multiple rows returned
+  SELECT library_sys_id, library_sys_name FROM library_system;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION is_lib_in_sys(in_lib_name VARCHAR(100), in_lib_sys_name VARCHAR(100))
+ RETURNS BOOL 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE ret BOOL;
+    -- GIVEN a library name and system, return 1 if the library is in the system
+    -- If a match is found, the count is 1 and ret = 1
+    SELECT COUNT(*)>0 INTO ret 
+        FROM library_system
+        INNER JOIN library
+        ON library.library_system = library_system.library_sys_id
+        WHERE 
+            in_lib_sys_name = library_system.library_sys_name 
+            AND 
+            library.library_name = in_lib_name;
+    
+    RETURN(ret);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION is_a_lib_sys(in_lib_sys_name VARCHAR(100))
+ RETURNS BOOL 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE ret BOOL;
+    -- GIVEN a library system name, return 1 if it exists
+    -- If a match is found, the count is 1 and ret = 1
+    SELECT COUNT(*)>0 INTO ret 
+        FROM library_system
+        WHERE in_lib_sys_name = library_system.library_sys_name;
+    
+    RETURN(ret);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
