@@ -577,18 +577,20 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE add_bookcase(IN in_library_id INT,
-    IN in_dewey_max FLOAT,
-    IN in_dewey_min FLOAT)
+    IN in_dewey_min FLOAT,
+    IN in_dewey_max FLOAT)
 BEGIN
     -- Get the current highest bookcase number for the library - use the next value
     DECLARE next_bookcase_local_num INT;
 
-    SET next_bookcase_local_num  = (
-        SELECT MAX(bookcase_local_num)
+     SET next_bookcase_local_num  = (
+        -- If a library doesnt have any bookshelves, max is null. this will have the result be a 0 instead of NULL.
+        SELECT COALESCE(MAX(bookcase_local_num) + 1, 0)
         FROM bookcase
         WHERE library_id = in_library_id
-        ) + 1;
-
+        );
+    SELECT next_bookcase_local_num;
+    
     -- insert the new book case
     INSERT INTO bookcase (bookcase_local_num, dewey_max, dewey_min, library_id)
         VALUES (next_bookcase_local_num, in_dewey_max, in_dewey_min, in_library_id);
@@ -599,36 +601,50 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE add_bookshelf(IN in_library_id INT,
-    IN in_dewey_max FLOAT,
-    IN in_dewey_min FLOAT)
+    IN in_dewey_min FLOAT,
+    IN in_dewey_max FLOAT)
 BEGIN
     -- Get the current highest bookshelf number for the library - use the next value
     DECLARE next_bookshelf_local_num INT;
     DECLARE referenced_bookcase_id INT;
-
+    
     SET next_bookshelf_local_num = (
-        SELECT MAX(bookshelf_local_num)
-        FROM bookshelf
-        WHERE library_id = in_library_id
-        ) + 1;
+        -- If a library doesnt have any bookshelves, max is null. 
+        -- This will have the result be a 0 instead of NULL.
+        SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 0)
+        -- Get the shelfs in the library
+        FROM (
+            SELECT bookshelf.* FROM 
+            -- Get the bookcase(s) this shelf could belong to
+            (
+                SELECT bookcase_id FROM bookcase WHERE library_id = in_library_id
+            ) getBookcases
+            -- Get all of the id's for EVERY shelf in this library (based on all of its cases)
+            RIGHT JOIN bookshelf
+            ON bookshelf.bookcase_id = getBookcases.bookcase_id
+        ) get_shelfs_in_lib
+    );
 
     -- pick the proper bookcase based on if the shelf's dewey range fits inside it.
     -- Can assume only 1 bookcase fits the criteria. limit to 1 just in case though.
     -- Whenever possible, put the book in the lower order book case
     SET referenced_bookcase_id = (
-        SELECT bookcase_id
-            FROM bookcase
-            WHERE (
-                in_dewey_min >= bookcase.dewey_min
-                    AND
-                in_dewey_min <= bookcase.dewey_max
-                )
-            ORDER BY bookcase_id ASC
-            LIMIT 1);
-
+        SELECT getBookcasesID.bookcase_id
+        FROM (
+        -- Get the bookcase(s) this shelf could belong to in the library
+            SELECT bookcase_id, dewey_min, dewey_max 
+            FROM bookcase 
+            WHERE library_id = in_library_id 
+                AND in_dewey_min >= dewey_min 
+                AND in_dewey_max <= dewey_max
+        ORDER BY bookcase.bookcase_id DESC
+        LIMIT 1
+        ) getBookcasesID
+    );
+    
     -- insert the new bookshelf
     INSERT INTO bookshelf (dewey_max, dewey_min, bookshelf_local_num, bookcase_id)
-        VALUES (in_dewey_max, in_dewey_min, next_bookshelf_local_num, @referenced_bookcase_id);
+        VALUES (in_dewey_max, in_dewey_min, next_bookshelf_local_num, referenced_bookcase_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
