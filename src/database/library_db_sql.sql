@@ -560,6 +560,28 @@ DELIMITER ;
 -- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd");
 -- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd"); -- will fail bc usernames MUST be unique
 
+DELIMITER $$
+CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
+BEGIN
+  DECLARE does_user_card_match BOOLEAN;
+  SET does_user_card_match = (
+    SELECT COUNT(*) > 0
+    FROM (
+      SELECT 
+          lib_user.lib_card_id
+      FROM lib_user
+      JOIN lib_cards on lib_cards.lib_card_id = lib_user.lib_card_id
+      WHERE (username = username_to_test and card_num = lib_cards.lib_card_num)
+    ) X
+  );
+
+  SELECT does_user_card_match;
+END $$
+DELIMITER ;
+
+-- call check_lib_card("testusername", 0); -- should return true
+-- call check_lib_card("testusername", 1000); -- should return false
+
 -- password is stored in MD5 hash so have to hash given password to check against db
 DELIMITER $$
 CREATE PROCEDURE check_password(IN username_to_test VARCHAR(50), IN pwd VARCHAR(50))

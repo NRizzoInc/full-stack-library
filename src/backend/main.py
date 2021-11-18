@@ -27,6 +27,7 @@ from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
 from loginForm import LoginForm
+from forgotPasswordForm import ForgotPwdForm
 
 class WebApp(UserManager):
     def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
@@ -199,7 +200,17 @@ class WebApp(UserManager):
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
-            return "Not Implemented Yet"
+            form = ForgotPwdForm(self._app, user_manager=self)
+
+            if request.method == "POST" and form.validate_on_submit():
+                # actually change a user's login given info is valid/allowed
+                self.updatePwd(form.username.data, form.new_password.data)
+                return redirect("/")
+            elif request.method == "POST":
+                print("Forgot Password Reset Failed")
+
+            # on GET or failure, reload
+            return render_template('forgotPasswordForm.html', title='LibraryDB Forgot Password', form=form)
 
         @self._app.route("/logout", methods=["GET", "POST"])
         @login_required
@@ -213,6 +224,7 @@ class WebApp(UserManager):
         print(f"http://localhost:{self._port}/")
         print(f"http://localhost:{self._port}/login")
         print(f"http://localhost:{self._port}/register")
+        print(f"http://localhost:{self._port}/forgot-password")
         print(f"http://localhost:{self._port}/logout")
         print(f"http://localhost:{self._port}/checkout")
         print(f"http://localhost:{self._port}/search_book")
