@@ -192,7 +192,7 @@ class WebApp(UserManager):
                 elif (add_res == 0):
                     flash('Registration Failed!')
             elif request.method == "POST":
-                print("Validation Failed")
+                print("Registration Validation Failed")
 
             # on GET or failure, reload
             return render_template('registration.html', title='LibraryDB Registration', form=form)
