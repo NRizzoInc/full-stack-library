@@ -10,7 +10,7 @@ DROP TABLE IF EXISTS library_system;
 -- The library system (such as all libraries in 1 city)
 CREATE TABLE library_system
  (
-    library_sys_id INT PRIMARY KEY NOT NULL,
+    library_sys_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     library_sys_name VARCHAR(100)
  );
 
@@ -18,7 +18,7 @@ DROP TABLE IF EXISTS library;
  -- Represents a library branch in the system
  CREATE TABLE library
  (
-  library_id INT PRIMARY KEY NOT NULL,
+  library_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   library_system INT NOT NULL,
   library_name VARCHAR(100) NOT NULL,
   address VARCHAR(100),
@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS library;
 -- A user in the library system
 CREATE TABLE lib_user
 (
- user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+ user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL AUTO_INCREMENT,
  first_name VARCHAR(50) NOT NULL,
  last_name VARCHAR(50) NOT NULL,
  dob DATE NOT NULL,
@@ -65,7 +65,7 @@ DROP TABLE IF EXISTS employee;
 -- All employees have a user id
 CREATE TABLE employee
  (
-    employee_id INT PRIMARY KEY NOT NULL,
+    employee_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     hire_date DATE,
     salary INT,
     job_role VARCHAR(50),  
@@ -89,7 +89,7 @@ CREATE TABLE employee
  -- Represents an entire bookcase, with bookshelfs, in a library branch
  CREATE TABLE bookcase
  (
-  bookcase_id INT PRIMARY KEY NOT NULL,
+  bookcase_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   -- The local id used to locate the bookcase inside of a branch
   bookcase_local_num INT NOT NULL,
   -- The min and max dewey decimal number on this shelf
@@ -109,7 +109,7 @@ CREATE TABLE employee
  -- Represents a bookshelf in a library branch
  CREATE TABLE bookshelf
  (
-  bookshelf_id INT PRIMARY KEY NOT NULL,
+  bookshelf_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   -- The min and max dewey decimal number on this shelf
   dewey_max FLOAT NOT NULL,
   dewey_min FLOAT NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE employee
  -- Represents a book in the library system
  CREATE TABLE book 
  (
-  book_id INT PRIMARY KEY NOT NULL,
+  book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   isbn INT NOT NULL,
   title VARCHAR(200) NOT NULL,
   author VARCHAR(100) NOT NULL,
@@ -637,3 +637,4 @@ DELIMITER ;
 
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
+-- Taken from the add_test_data/ scripts
