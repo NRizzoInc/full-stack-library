@@ -552,3 +552,88 @@ BEGIN
 END $$
 -- resets the DELIMETER
 DELIMITER ;
+
+
+DELIMITER $$
+CREATE PROCEDURE add_new_book(IN title VARCHAR(200),
+    IN library_id INT,
+    IN isbn INT,
+    IN author VARCHAR(100),
+    IN publisher VARCHAR(100),
+    IN is_audio_book BOOL,
+    IN num_pages INT,
+    IN checkout_length_days INT,
+    IN book_dewey FLOAT,
+    IN late_fee_per_day FLOAT)
+BEGIN
+    -- Take the input of library_id because it is assumed an employee (with a library Fk) is adding the book.
+    -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
+    SELECT * FROM books;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE add_bookcase(IN in_library_id INT,
+    IN in_dewey_max FLOAT,
+    IN in_dewey_min FLOAT)
+BEGIN
+    -- Get the current highest bookcase number for the library - use the next value
+    DECLARE next_bookcase_local_num INT;
+
+    SET @next_bookcase_local_num  = (
+        SELECT MAX(bookcase_local_num)
+        FROM bookcase
+        WHERE library_id = in_library_id
+        ) + 1;
+
+    -- insert the new book case
+    INSERT INTO bookcase (bookcase_local_num, dewey_max, dewey_min, library_id)
+        VALUES (@next_bookcase_local_num, in_dewey_max, in_dewey_min, in_library_id);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE PROCEDURE add_bookshelf(IN in_library_id INT,
+    IN in_dewey_max FLOAT,
+    IN in_dewey_min FLOAT)
+BEGIN
+    -- Get the current highest bookshelf number for the library - use the next value
+    DECLARE next_bookshelf_local_num INT;
+    DECLARE referenced_bookcase_id INT;
+
+    SET @next_bookshelf_local_num = (
+        SELECT MAX(bookshelf_local_num)
+        FROM bookshelf
+        WHERE library_id = in_library_id
+        ) + 1;
+
+    -- pick the proper bookcase based on if the shelf's dewey range fits inside it.
+    -- Can assume only 1 bookcase fits the criteria. limit to 1 just in case though.
+    -- Whenever possible, put the book in the lower order book case
+    SET @referenced_bookcase_id = (
+        SELECT bookcase_id
+            FROM bookcase
+            WHERE (
+                in_dewey_min >= bookcase.dewey_min
+                    AND
+                in_dewey_min <= bookcase.dewey_max
+                )
+            ORDER BY bookcase_id ASC
+            LIMIT 1);
+
+    -- insert the new bookshelf
+    INSERT INTO bookshelf (dewey_max, dewey_min, bookshelf_local_num, bookcase_id)
+        VALUES (in_dewey_max, in_dewey_min, next_bookshelf_local_num, @referenced_bookcase_id);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+
+
+
+
+-- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
