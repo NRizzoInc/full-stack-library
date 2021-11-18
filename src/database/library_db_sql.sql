@@ -664,6 +664,19 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DELIMITER $$
+CREATE PROCEDURE get_users_lib_id(IN in_user_id INT)
+BEGIN
+  -- GIVEN: a user's id, return the id of the library they belong to
+  
+  -- The backend side will have the user's id,
+  -- so this procedure makes it very easy to get the library they belong to
+  SELECT library_id 
+    FROM user_register
+    WHERE in_user_id = user_id;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
 
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
