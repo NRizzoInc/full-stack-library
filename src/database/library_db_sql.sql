@@ -1,5 +1,5 @@
 -- Project Code 
--- Last Updated: 2021/11/10
+-- Last Updated: 2021/11/17
 
 DROP DATABASE IF EXISTS libsystem;
 
@@ -135,6 +135,8 @@ CREATE TABLE employee
   is_audio_book BOOL NOT NULL,
   num_pages INT,
   checkout_length_days INT,
+  -- the dewey decimal number of the book
+  book_dewey FLOAT NOT NULL,
   -- the late fee that accumulate every day past the due date
   late_fee_per_day FLOAT NOT NULL DEFAULT 0.5,
  
@@ -242,24 +244,9 @@ CONSTRAINT FK_hist_library
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
-
--- PROCEDURES
--- take book title, give back copies available, number of holds, library it is at
-
--- search_for_available
--- WIP, these will be used to get the exact library each book is located at
-    -- gets bookcase_id given a bookshelf_id from a book
-    -- The way this is set up, it will get the bookcases of only AVAILABLE books!
-   -- bc_locator AS(
- --  SELECT bookcase_id, copies_all.book_id AS book_id FROM bookshelf, copies_all 
- --   WHERE (bookshelf.bookshelf_id = copies_all.bookshelf_id)),
-    
-   -- gets library_id given a bookcase_id from a book 
- --  lib_locator AS(
---    SELECT library_id, bc_locator.book_id AS book_id FROM bookcase, bc_locator
- --    WHERE (bc_locator.bookcase_id = bookcase.library_id)),
-
-
+--
+-- FUNCTIONS
+--
 
 -- Given a book_id, returns the library_id of where it is located
 DELIMITER $$
@@ -295,7 +282,9 @@ END $$
 DELIMITER ;
 
 
--- CALL book_library_locator(id in);
+--
+-- PROCEDURES
+--
 
 -- Takes book title, returns # of copies available, # checked out, and # on hold
 DELIMITER $$
@@ -425,6 +414,28 @@ BEGIN
    INSERT INTO user_hist
    VALUES (DEFAULT, user_id_p, book_id_p, library_book_ID, 
         CURDATE(), DEFAULT);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+-- Procedure to place a hold for a book
+-- will put a hold on the copy of the book that has been checked out the longest
+DELIMITER $$
+CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
+BEGIN
+-- get the copy of book in checked_out_books that has been out the longest
+-- make a hold with that book and user date
+
+INSERT INTO holds
+    VALUES (DEFAULT, 
+        -- the book_id of the book that has been checked out the longest
+            (SELECT book_id FROM checked_out_books 
+             WHERE (title_p = title)
+             ORDER BY checkout_date ASC 
+             LIMIT 1)
+            , user_id_p,
+            CURDATE());
 END $$
 
 
