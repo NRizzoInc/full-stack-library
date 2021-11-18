@@ -130,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# Remove stuff for testing that should not be submit
+src/database/test
