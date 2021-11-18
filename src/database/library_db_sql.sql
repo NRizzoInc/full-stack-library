@@ -22,7 +22,9 @@ DROP TABLE IF EXISTS library;
   library_system INT NOT NULL,
   library_name VARCHAR(100) NOT NULL,
   address VARCHAR(100),
-  hours_of_operation VARCHAR(40),
+  -- Simplifying the process to weekday times
+  start_time_of_operation time,
+  end_time_of_operation time,
   -- how many books can an individual check out of THIS branch at one time
   -- The default is 1 book per user
   max_concurrently_borrowed INT NOT NULL DEFAULT 1,
@@ -581,7 +583,7 @@ BEGIN
     -- Get the current highest bookcase number for the library - use the next value
     DECLARE next_bookcase_local_num INT;
 
-    SET @next_bookcase_local_num  = (
+    SET next_bookcase_local_num  = (
         SELECT MAX(bookcase_local_num)
         FROM bookcase
         WHERE library_id = in_library_id
@@ -589,7 +591,7 @@ BEGIN
 
     -- insert the new book case
     INSERT INTO bookcase (bookcase_local_num, dewey_max, dewey_min, library_id)
-        VALUES (@next_bookcase_local_num, in_dewey_max, in_dewey_min, in_library_id);
+        VALUES (next_bookcase_local_num, in_dewey_max, in_dewey_min, in_library_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -604,7 +606,7 @@ BEGIN
     DECLARE next_bookshelf_local_num INT;
     DECLARE referenced_bookcase_id INT;
 
-    SET @next_bookshelf_local_num = (
+    SET next_bookshelf_local_num = (
         SELECT MAX(bookshelf_local_num)
         FROM bookshelf
         WHERE library_id = in_library_id
@@ -613,7 +615,7 @@ BEGIN
     -- pick the proper bookcase based on if the shelf's dewey range fits inside it.
     -- Can assume only 1 bookcase fits the criteria. limit to 1 just in case though.
     -- Whenever possible, put the book in the lower order book case
-    SET @referenced_bookcase_id = (
+    SET referenced_bookcase_id = (
         SELECT bookcase_id
             FROM bookcase
             WHERE (
@@ -632,7 +634,35 @@ END $$
 DELIMITER ;
 
 
-
+DELIMITER $$
+CREATE PROCEDURE add_library(IN in_library_system_name VARCHAR(100),
+    IN in_library_name VARCHAR(100),
+    IN in_address VARCHAR(100),
+    IN in_start_time_of_operation time,
+    IN in_end_time_of_operation time,
+    IN in_max_concurrently_borrowed INT)
+BEGIN
+    -- Get the id of the library system that this new library belongs to 
+    DECLARE var_library_sys_id INT;
+    SET var_library_sys_id = (
+         SELECT library_sys_id
+            FROM library_system
+            WHERE library_sys_name = in_library_system_name
+            LIMIT 1
+        );
+    
+    -- Insert the given values into the table
+     INSERT INTO library (library_system, 
+            library_name, 
+            address,
+            start_time_of_operation, 
+            end_time_of_operation, 
+            max_concurrently_borrowed)
+     VALUES (var_library_sys_id, in_library_name, in_address, in_start_time_of_operation, 
+        in_end_time_of_operation, in_max_concurrently_borrowed);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
 
 
 
