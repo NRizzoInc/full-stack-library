@@ -12,7 +12,7 @@ CREATE TABLE library_system
  (
     library_sys_id INT PRIMARY KEY NOT NULL,
     library_sys_name VARCHAR(100)
- );
+ ); 
 
 DROP TABLE IF EXISTS library;
  -- Represents a library branch in the system
