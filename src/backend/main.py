@@ -197,6 +197,10 @@ class WebApp(UserManager):
             # on GET or failure, reload
             return render_template('registration.html', title='LibraryDB Registration', form=form)
 
+        @self._app.route("/forgot-password", methods=["GET", "POST"])
+        def forgotPassword():
+            return "Not Implemented Yet"
+
         @self._app.route("/logout", methods=["GET", "POST"])
         @login_required
         def logout():
