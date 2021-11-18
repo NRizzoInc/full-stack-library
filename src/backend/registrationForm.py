@@ -63,7 +63,6 @@ class RegistrationForm(FlaskForm):
 
     def validateLibSystemName(self, form, field) -> bool:
         is_valid_system = self.user_manager.does_lib_system_exist(form.lib_sys_name.data)
-        print(f"is valid sys = {is_valid_system}")
         if not is_valid_system:
             errMsg = "Library System '" + str(form.lib_sys_name.data) + "' does not exist, please try again"
             # flash(errMsg)

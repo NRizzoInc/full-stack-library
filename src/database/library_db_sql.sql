@@ -554,8 +554,7 @@ CREATE PROCEDURE insert_user(
   
   -- insert into user_register
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
-  
-    
+  COMMIT;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -651,7 +650,6 @@ BEGIN
         FROM bookcase
         WHERE library_id = in_library_id
         );
-    SELECT next_bookcase_local_num;
     
     -- insert the new book case
     INSERT INTO bookcase (bookcase_local_num, dewey_max, dewey_min, library_id)
@@ -911,3 +909,19 @@ CALL insert_user("employee",
   true,
   "test_employee2",
   "fakePWD1234");
+  
+-- ##### ADD some BOOKS ####
+  CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
+    -- This only works bc custom data, change eventually
+    1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
+    false, 1442, 14, 005.74, .5);
+
+-- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
+CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
+    false, 704, 14, 812.54, .5);
+CALL add_new_book("Moby Dick", 2, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
+    false, 704, 14, 812.54, .5);
+
+-- Also put Moby Dick in another system to test the search results - 4 is start of new system
+CALL add_new_book("Moby Dick", 4, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
+    false, 704, 14, 812.54, .5);

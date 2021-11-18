@@ -76,7 +76,6 @@ class DB_Manager():
             user_ids = list(self.cursor.fetchone().values())[0]
             # use '.values()' to make python agnostic to the name of returned col in procedure
             # return user_ids[0].values()[0] if len(user_ids) > 0 else -1
-            print(user_ids)
             return user_ids if user_ids is not None else -1
         except:
             return -1
@@ -95,8 +94,6 @@ class DB_Manager():
 
         num_rows = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s, %s)",
                             (fname, lname, library_id, dob, is_employee, username, pwd))
-        # actually apply change to database
-        self.conn.commit()
         # number of rows affected should = 1
         return 1 if num_rows == 1 else 0
 
@@ -112,7 +109,6 @@ class DB_Manager():
         try:
             self.cursor.execute("select get_users_lib_id(%s)", user_id)
             lib_id = list(self.cursor.fetchone().values())[0]
-            print(lib_id)
             return lib_id if lib_id is not None else None
         except:
             return False
@@ -122,7 +118,6 @@ class DB_Manager():
             self.cursor.execute("select get_lib_id_from_name(%s, %s)", (lib_name, lib_system_name))
             # functions return table where key = entire statement & value = return
             lib_id = list(self.cursor.fetchone().values())[0]
-            print(lib_id)
             return lib_id if lib_id is not None else None
         except:
             return False
@@ -135,7 +130,6 @@ class DB_Manager():
             # Flatten 2D dict (of rows) into 1 dict
             library_dict = {lib_id:lib_name for id_name_pair in library_list
                                 for lib_id,lib_name in id_name_pair.items()}
-            print(library_dict)
             return library_dict
         except:
             return dict()
@@ -151,7 +145,6 @@ class DB_Manager():
                 # each row is {id: id, sys_name: name}
                 id_name_list = list(row.values())
                 library_sys_dict[id_name_list[0]] = id_name_list[1]
-            print(library_sys_dict)
             return library_sys_dict
         except:
             return dict()
