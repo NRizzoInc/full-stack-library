@@ -399,10 +399,10 @@ BEGIN
   
   -- Adds the book to the check_out_books table
    INSERT INTO checked_out_books
-   VALUES (user_id_p, book_id_p, CURDATE());
+   VALUES (user_id_p, book_id_p, NOW());
    
    -- The due date of the book is:
-   SELECT DATE(CURDAT() + checkout_length_days) AS "The book is due: ";
+   SELECT DATE(CURDATE() + checkout_length_days) AS "The book is due: ";
  
  SET library_book_ID = (
     SELECT library_id FROM library
@@ -413,7 +413,7 @@ BEGIN
    -- Adding the checkout into the user_hist table
    INSERT INTO user_hist
    VALUES (DEFAULT, user_id_p, book_id_p, library_book_ID, 
-        CURDATE(), DEFAULT);
+        NOW(), DEFAULT);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -435,7 +435,7 @@ INSERT INTO holds
              ORDER BY checkout_date ASC 
              LIMIT 1)
             , user_id_p,
-            CURDATE());
+            NOW());
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -451,7 +451,7 @@ SELECT library_id_from_book(book_id_P) INTO book_library_id;
 
  -- Adds the return date to the user_Hist
 UPDATE user_hist
- SET date_returned =CURDATE()
+ SET date_returned = NOW()
  WHERE ((user_id_p = user_id) AND 
         (book_id_p = book_id));
  
@@ -469,7 +469,7 @@ UPDATE user_hist
      VALUES ((SELECT user_id FROM holds 
                 WHERE (book_id_p = book_id) 
                 ORDER BY hold_start_date ASC LIMIT 1)
-            , book_id_p, CURDATE());
+            , book_id_p, NOW());
       
       -- Updates user_hist 
     INSERT INTO user_hist
@@ -478,7 +478,7 @@ UPDATE user_hist
                 WHERE (book_id_p = book_id) 
                 ORDER BY hold_start_date ASC LIMIT 1)
             , book_id_p, book_library_id
-    , CURDATE(), null);
+    , NOW(), null);
   
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
