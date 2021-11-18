@@ -1,5 +1,5 @@
 -- Project Code 
--- Last Updated: 2021/11/17
+-- Last Updated: 2021/11/17 
 
 DROP DATABASE IF EXISTS libsystem;
 
@@ -423,7 +423,7 @@ DELIMITER ;
 -- will put a hold on the copy of the book that has been checked out the longest
 DELIMITER $$
 CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
-BEGIN
+BEGIN 
 -- get the copy of book in checked_out_books that has been out the longest
 -- make a hold with that book and user date
 
@@ -437,7 +437,8 @@ INSERT INTO holds
             , user_id_p,
             CURDATE());
 END $$
-
+-- resets the DELIMETER
+DELIMITER ;
 
 -- returns a book to the library
 DELIMITER $$
@@ -483,6 +484,9 @@ UPDATE user_hist
  -- for the longest period of time, assuming that it will be the next copy returned
  END IF;
 END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 
 -- Given a username, returns true (1) if username is not currently used
 -- false (0) if not used
