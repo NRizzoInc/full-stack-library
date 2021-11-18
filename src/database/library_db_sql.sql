@@ -51,7 +51,14 @@ CREATE TABLE lib_cards
 -- A user in the library system
 CREATE TABLE lib_user
 (
- user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL AUTO_INCREMENT,
+ user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+ -- the id of the user's library card, a 14 digit number
+ lib_card_id INT NOT NULL,
+ CONSTRAINT lib_card_id_fk
+    FOREIGN KEY (lib_card_id)
+    REFERENCES lib_cards(lib_card_id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
  first_name VARCHAR(50) NOT NULL,
  last_name VARCHAR(50) NOT NULL,
  dob DATE NOT NULL,
@@ -63,17 +70,7 @@ CREATE TABLE lib_user
  -- username used to login
  username VARCHAR(50) NOT NULL UNIQUE,
  -- password used to login
- lib_password VARCHAR(50) NOT NULL,
- 
- -- the id of the user's library card, a 14 digit number
-
- -- with leading zeros (or ignore them in database and handle in procedures)
- lib_card_id INT NOT NULL,
- CONSTRAINT lib_card_id_fk
-    FOREIGN KEY (lib_card_id)
-    REFERENCES lib_cards(lib_card_id)
-    ON UPDATE CASCADE
-    ON DELETE RESTRICT
+ lib_password VARCHAR(50) NOT NULL
 );
 
 DROP TABLE IF EXISTS employee;
@@ -545,15 +542,16 @@ CREATE PROCEDURE insert_user(
   SET new_lib_card_id = LAST_INSERT_ID(); -- get id of last inserted row into a table
 
   -- insert into lib_user
-  INSERT INTO lib_user (user_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password, lib_card_id)
+  INSERT INTO lib_user (user_id, lib_card_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password)
   -- user_id is auto increment, so specify default behavior
   -- hash the password with MD5 & only ever do checks on the hash (no plaintext passwords)
-  VALUES(DEFAULT, fname, lname, dob, 0, is_employee, username, MD5(pwd), new_lib_card_id);
+  VALUES(DEFAULT, new_lib_card_id, fname, lname, dob, 0, is_employee, username, MD5(pwd));
   SET new_user_id = LAST_INSERT_ID();
   
   -- insert into user_register
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
   COMMIT
+
 
 END $$
 -- resets the DELIMETER
