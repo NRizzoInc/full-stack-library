@@ -177,6 +177,15 @@ class DB_Manager():
         except:
             return None
 
+    def get_users_lib_sys_id(self, user_id) -> Optional[int]:
+        """Given a user's id, returns the id of the library system"""
+        try:
+            self.cursor.execute("select get_lib_sys_id_from_user_id(%s)", (user_id))
+            lib_sys_id = list(self.cursor.fetchone().values())[0]
+            return int(lib_sys_id)
+        except:
+            return None
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
     parser.add_argument(

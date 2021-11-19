@@ -795,6 +795,28 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DELIMITER $$
+CREATE FUNCTION get_lib_sys_id_from_user_id(in_user_id INT)
+ RETURNS BOOL 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE lib_sys_id BOOL;
+    -- GIVEN a user's id, returns the id of the library system 
+    SELECT library_system INTO lib_sys_id
+        FROM library
+        WHERE library_id = (
+            SELECT library_id
+            FROM user_register
+            WHERE user_id = in_user_id
+            LIMIT 1
+        );
+    
+    RETURN(lib_sys_id);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####

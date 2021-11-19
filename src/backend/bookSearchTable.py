@@ -1,6 +1,8 @@
 from flask_table import Table, Col
 from flask_table.columns import LinkCol
 
+from typing import Optional, Dict, List
+
 class BookSearchTable(Table):
     lib_name = Col('Library Name')
     total_num_at_lib = Col('Total Number of Copies at Library')
@@ -43,3 +45,19 @@ class BookSearchCell(object):
             # If there are no book left, a hold should be placed
             "is_place_hold": self.is_place_hold
         }
+
+def create_search_cells(raw_res_list : List[Dict], book_title : str) -> List[BookSearchCell]:
+    """Given the raw results of a serach, generates a list of BookSearchCell objects.
+    Can be used to create a BookSearchTable object"""
+    search_res = []
+    if raw_res_list is not None:
+        # Keep adding to the search results list with cell objects
+        # Will ad-hoc generate a table on the webpage with all the results
+        for result in raw_res_list:
+            search_res.append(
+                BookSearchCell(result['library_name'], result['num_copies_at_library'],
+                    result['num_copies_in_stock'], result['num_checked_out'],
+                    result['number_holds'], result['bookcase_local_num'],
+                    result['bookshelf_local_num'], result['book_id'], book_title )
+            )
+    return search_res

@@ -22,7 +22,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 
 #--------------------------------Project Includes--------------------------------#
 from formManager import bookLookupForm
-from bookSearchTable import BookSearchTable, BookSearchCell
+from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
@@ -83,24 +83,17 @@ class WebApp(UserManager):
 
     def createFormPages(self):
         @self._app.route('/search_book', methods=['POST'])
+        @login_required
         def search_book():
             form = bookLookupForm(request.form)
             url = "/"
             # Get the library system of the user to search for
-            lib_sys_id = 1
-            raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
+            lib_sys_id = self.get_users_lib_sys_id(current_user.id)
             search_res = []
-            if raw_res_list is not None:
-                # Keep adding to the search results list with cell objects
-                # Will ad-hoc generate a table on the webpage with all the results
+            if lib_sys_id is not None:
+                raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
+                search_res = create_search_cells(raw_res_list, form.book_title.data)
 
-                for result in raw_res_list:
-                    search_res.append(
-                        BookSearchCell(result['library_name'], result['num_copies_at_library'],
-                            result['num_copies_in_stock'], result['num_checked_out'],
-                            result['number_holds'], result['bookcase_local_num'],
-                            result['bookshelf_local_num'], result['book_id'], form.book_title.data)
-                    )
             # If the list is empty, "No Items" is displayed
             search_table = BookSearchTable(search_res)
 
