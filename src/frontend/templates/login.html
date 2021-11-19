@@ -1,3 +1,5 @@
+{% extends "base.html" %}
+
 <head>
     <link rel="icon" href="../static/images/library_icon.png"> 
     <title>{{ title }}</title>
@@ -6,22 +8,37 @@
 <body>
     <p>New User? <a href="/register">Click to Register!</a></p>
     {% block content %}
-        <h1>Sign In</h1>
-        <form action="" method="post" novalidate>
-            {{ form.hidden_tag() }}
-            <p>
-                {{ form.username.label }}<br>
-                {{ form.username(size=32) }}
-            </p>
-            <p>
-                {{ form.password.label }}<br>
-                {{ form.password(size=32) }}
-            </p>
-            <p>
-                {% include "flash.html" %}
-            </p>
-            <p>{{ form.rememberMe() }} {{ form.rememberMe.label }}</p>
-            <p>{{ form.submit() }}</p>
-        </form>
+    <div class="column is-4 is-offset-4">
+        <h3 class="title">Sign In</h3>
+        <div class="box">
+            <form action="" method="post" novalidate>
+                {{ form.hidden_tag() }}
+                <div class="field">
+                    <div class="control">
+                        {{ form.username.label }}<br>
+                        {{ form.username(class="input is-medium", placeholder="username") }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.password.label }}<br>
+                        {{ form.password(class="input is-medium", placeholder="password") }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {% include "flash.html" %}
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="checkbox">
+                        {{ form.rememberMe(class="checkbox") }}
+                        {{ form.rememberMe.label(class="checkboxp") }}
+                    </label>
+                </div>
+                <p>{{ form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
+            </form>
+        </div>
+    </div>
     {% endblock %}
 </body>

@@ -21,7 +21,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 
 
 #--------------------------------Project Includes--------------------------------#
-from formManager import bookLookupForm
+from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from user import User
 from userManager import UserManager
@@ -80,14 +80,19 @@ class WebApp(UserManager):
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
-        def createMainPage():
-            return render_template("mainPage.html", title="Library DB App", form=bookLookupForm())
+        def index():
+            return render_template("index.html", title="Library DB App", form=BookSearchForm())
+
+        @self._app.route("/", methods=["GET"])
+        def profile():
+            return render_template("profile.html", title="Library DB App")
+
 
     def createFormPages(self):
         @self._app.route('/search_book', methods=['POST'])
         @login_required
         def search_book():
-            form = bookLookupForm(request.form)
+            form = BookSearchForm(request.form)
             url = "/"
             # Get the library system of the user to search for
             lib_sys_id = self.get_users_lib_sys_id(current_user.id)

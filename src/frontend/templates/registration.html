@@ -1,77 +1,104 @@
+{% include "flash.html" %}
+{% extends "base.html" %}
+
 <head>
     <link rel="icon" href="../static/images/library_icon.png">
 </head>
 <body>
-    {% include "flash.html" %}
 
     {% block content %}
-    <h1>Register</h1>
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        <p>
-            {{ form.fname.label }}<br>
-            {{ form.fname(size=32) }}<br>
-            {% for error in form.fname.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.lname.label }}<br>
-            {{ form.lname(size=32) }}<br>
-            {% for error in form.lname.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.dob.label }}<br>
-            {{ form.dob(size=32) }}<br>
-            {% for error in form.dob.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.is_employee.label }}
-            {{ form.is_employee(size=32) }}<br>
-            {% for error in form.is_employee.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.lib_sys_name.label }}<br>
-            {{ form.lib_sys_name(size=32) }}<br>
-            {% for error in form.lib_sys_name.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.lib_name.label }}<br>
-            {{ form.lib_name(size=32) }}<br>
-            {% for error in form.lib_name.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.username.label }}<br>
-            {{ form.username(size=32) }}<br>
-            {% for error in form.username.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.password.label }}<br>
-            {{ form.password(size=32) }}<br>
-            {% for error in form.password.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.password2.label }}<br>
-            {{ form.password2(size=32) }}<br>
-            {% for error in form.password2.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>{{ form.submit() }}</p>
-    </form>
+    <div class="column is-4 is-offset-4">
+        <h3 class="title">Sign Up</h3>
+        <div class="box">
+            <form action="" method="post">
+                {{ form.hidden_tag() }}
+                <div class="field">
+                    <div class="control">
+                        {{ form.fname.label }}<br>
+                        {{ form.fname(class="input is-medium", placeholder="First Name") }}<br>
+                        {% for error in form.fname.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.lname.label }}<br>
+                        {{ form.lname(class="input is-medium", placeholder="Last Name") }}<br>
+                        {% for error in form.lname.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.dob.label }}<br>
+                        {{ form.dob(class="input is-medium") }}<br>
+                        {% for error in form.dob.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.is_employee.label }}
+                        {{ form.is_employee(size=32) }}<br>
+                        {% for error in form.is_employee.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        {{ form.lib_sys_name.label }}<br>
+                        {{ form.lib_sys_name(class="input is-medium", placeholder="Library System") }}<br>
+                        {% for error in form.lib_sys_name.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        {{ form.lib_name.label }}<br>
+                        {{ form.lib_name(class="input is-medium", placeholder="Library") }}<br>
+                        {% for error in form.lib_name.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        {{ form.username.label }}<br>
+                        {{ form.username(class="input is-medium", placeholder="username") }}<br>
+                        {% for error in form.username.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.password.label }}<br>
+                        {{ form.password(class="input is-medium", placeholder="password") }}<br>
+                        {% for error in form.password.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.password2.label }}<br>
+                        {{ form.password2(class="input is-medium", placeholder="password") }}<br>
+                        {% for error in form.password2.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p>{{ form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
+            </form>
+        </div>
+    </div>
     {% endblock %}
 </body>
