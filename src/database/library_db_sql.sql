@@ -594,8 +594,6 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
--- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd");
--- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd"); -- will fail bc usernames MUST be unique
 
 DELIMITER $$
 CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
@@ -1049,6 +1047,40 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS checkout_book;
+DELIMITER $$
+CREATE PROCEDURE checkout_book(
+  IN user_id_p INT,
+  IN book_id_p INT,
+  IN lib_sys_id_p INT,
+  IN lib_id_p INT
+) BEGIN
+  -- given user_id, book_id, lib_sys_id, & lib_id -> checkout book
+  -- modify checked_out_books & user_hist tables
+
+  -- use transaction bc multiple inserts and should rollback on error
+  DECLARE checkout_datetime DATE;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      ROLLBACK;
+  END;
+  START TRANSACTION;
+
+  SET checkout_datetime = NOW();
+
+  -- add book as "checked out"
+  INSERT INTO checked_out_books (user_id,   book_id,   checkout_date)
+  VALUES                        (user_id_p, book_id_p, checkout_datetime);
+
+  -- add book to user_hist
+  INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
+  VALUES                (DEFAULT, user_id_p, book_id_p,     lib_id_p,   checkout_datetime);
+
+  COMMIT;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
@@ -1138,7 +1170,7 @@ CALL insert_user(
 );
   
 -- ##### ADD some BOOKS ####
-  CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
+CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
     1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
     false, 1442, 14, 005.74, 10);
@@ -1196,3 +1228,8 @@ CALL add_new_book("American Gods", 3,
 CALL add_new_book("Death of a Salesman", 4,
     9780140481341, "Arthur Miller", "Penguin Plays", false, 
     139, 21, 812.52, .06);
+
+-- have test user (nickrizzo) checkout one copy of Moby Dick (1/2 available)
+-- user_id = 1, book_id = 2(moby dick #1), lib_sys_id = 1(Metro Boston Library Network), lib_id = 1 (match insert above = Charlestown)
+-- test search with user: nickrizzo -> moby dick
+CALL checkout_book(1, 2, 1, 1);
