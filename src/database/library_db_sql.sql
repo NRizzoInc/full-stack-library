@@ -343,22 +343,41 @@ DELIMITER ;
 
 -- Lists the library branch where each available copy of a book is located
 DELIMITER $$
-CREATE PROCEDURE get_book_location(IN booktitle_p VARCHAR(50))
+CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50))
 BEGIN
 -- This cannot be a function because a table is returned
  WITH
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
-   SELECT library.library_name, library.library_id, bookcase.bookcase_local_num, bookshelf.bookshelf_local_num,
+   SELECT book.book_id, library.library_name, library.library_id, bookcase.bookcase_local_num, bookshelf.bookshelf_local_num,
     bookcase.bookcase_id, bookshelf.bookshelf_id, COUNT(*) AS num_copies_at_library
    FROM book
    JOIN bookshelf ON book.bookshelf_id = bookshelf.bookshelf_id
    JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
    JOIN library ON bookcase.library_id = library.library_id
    WHERE (title = booktitle_p)
-   GROUP BY library.library_id)
+   GROUP BY library.library_id),
 
-  SELECT * FROM all_copies;
+  -- Get the Copies that are checked out
+  num_copies_taken AS(
+    SELECT all_copies.book_id, all_copies.library_id, COUNT(checked_out_books.book_id) AS num_checked_out
+    FROM all_copies
+    LEFT OUTER JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
+    GROUP BY all_copies.library_id
+  ),
+  
+  num_copies_available AS(
+    SELECT all_copies.book_id, all_copies.library_name, all_copies.library_id, all_copies.bookcase_local_num, all_copies.bookshelf_local_num,
+        all_copies.bookcase_id, all_copies.bookshelf_id, 
+        all_copies.num_copies_at_library, num_copies_taken.num_checked_out,
+        (all_copies.num_copies_at_library - num_copies_taken.num_checked_out) AS num_copies_in_stock
+    FROM all_copies
+    LEFT OUTER JOIN num_copies_taken 
+    ON all_copies.book_id = num_copies_taken.book_id
+  )
+  
+  -- Find how many holds there are for the book at each library
+  SELECT * FROM num_copies_available;
 
  
 END $$
@@ -887,6 +906,9 @@ CALL insert_user("employee",
     false, 1442, 14, 005.74, .5);
 
 -- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
+CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
+    false, 704, 14, 812.54, .5);
+-- Have 2 copies of the same book in 1 library
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
     false, 704, 14, 812.54, .5);
 CALL add_new_book("Moby Dick", 2, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
