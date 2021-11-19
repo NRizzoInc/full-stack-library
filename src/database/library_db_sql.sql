@@ -346,51 +346,21 @@ DELIMITER $$
 CREATE PROCEDURE get_book_location(IN booktitle_p VARCHAR(50))
 BEGIN
 -- This cannot be a function because a table is returned
- WITH 
-   -- all copies of this book in the system
-  copies_all AS(
-   SELECT * FROM book 
-    WHERE (title = booktitle_p)),
-  
-  -- all copies that are checked out
-  copies_checked_out AS(
-   SELECT * FROM checked_out_books 
-     WHERE book_id IN (SELECT * FROM all_copies)),
+ WITH
+   -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
+  all_copies AS(
+   SELECT library.library_name, library.library_id, bookcase.bookcase_local_num, bookshelf.bookshelf_local_num,
+    bookcase.bookcase_id, bookshelf.bookshelf_id, COUNT(*) AS num_copies_at_library
+   FROM book
+   JOIN bookshelf ON book.bookshelf_id = bookshelf.bookshelf_id
+   JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
+   JOIN library ON bookcase.library_id = library.library_id
+   WHERE (title = booktitle_p)
+   GROUP BY library.library_id)
+
+  SELECT * FROM all_copies;
+
  
- -- all books in the system that are NOT checked out
-   copies_available AS(
-   SELECT * FROM copies_all 
-    WHERE (book_id.copies_all NOT IN (SELECT * FROM copies_checked_out))),
- 
- 
- -- This is redundant, but I don't want to delete it in case I need it later
- -- The bookcase that a bookshelf is on
- --   bookshelf_loc AS (
- --   SELECT bookcase_id FROM bookshelf
- --    WHERE (bookshelf.booksheld_id IN (SELECT * FROM copies_available))),
-    
- -- The library that a bookcase in in
- -- lib_loc AS (
- --  SELECT library_id, library_name FROM library
- --   WHERE (library.library_id IN (SELECT * FROM bookshelf_loc))),
- 
- -- joining the copies_available and bookcase_id from bookshelf table
-  copies_available_bs AS (
-  SELECT title, copies_available.bookshelf_id, bookshelf.bookcase_id 
-   FROM copies_available JOIN bookshelf
-   USING (bookshelf_id)),
-   
-   -- joining copies_available_bs and library name from library table
-   copies_available_lib AS (
-   SELECT copies_available_bs.title, copies_available_bs.bookshelf_id, 
-            copies_available_bs.bookcase_id,
-            library.library_name
-    FROM copies_available_bs JOIN library
-    USING (library_id))
- 
- -- This should contain the book title, the bookshelf_id, bookcase_id, and library name
- -- of the available copies of the desired book
- SELECT * FROM copies_available_lib;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
