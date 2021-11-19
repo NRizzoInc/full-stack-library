@@ -9,40 +9,97 @@
     <link rel="stylesheet" href="../static/css/bulma.min.css" />  <!-- https://bulma.io/documentation/components/navbar/ -->
 
     <script src="../static/js/extern/jquery-3.5.1.min.js"></script>
+    <script src="../static/js/navbar.js"></script>
 </head>
 <body>
-<section class="hero is-fullheight" style="background-color:#C4FCEF;">
-    <div class="hero-head">
-        <nav class="navbar">
-            <div class="navbar-menu">
-                <div class="navbar-start">
-                    <a href="{{ url_for('index') }}" class="navbar-item">
-                        Home
+    <!-- for colors: https://bulma.io/documentation/helpers/color-helpers/ -->
+    <div class="hero is-fullheight" style="background-color:#C4FCEF;">
+        <div class="hero-head">
+            <nav class="navbar" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    <a class="navbar-item" href="{{ url_for('index') }}">
+                      <img src="../static/images/library_icon.png">
                     </a>
-                    <a href="{{ url_for('profile') }}" class="navbar-item">
-                        Profile
-                    </a>
-                    <a href="{{ url_for('login') }}" class="navbar-item">
-                        Login
-                    </a>
-                    <a href="{{ url_for('register') }}" class="navbar-item">
-                        Sign Up
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="navbar-item">
-                        Logout
-                    </a>
-                    <a href="{{ url_for('forgotPassword') }}" class="navbar-item">
-                        Forgot-Password
+
+                    <!-- on mobile or page too small -->
+                    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
+                        <span aria-hidden="true"></span>
                     </a>
                 </div>
+
+                <div class="navbar-menu">
+                    <div class="navbar-start">
+                        <div class="navbar-item">
+                            <div class="buttons">
+                            <a href="{{ url_for('index') }}" class="button is-link">
+                                Home
+                            </a>
+                        </div>
+                    </div>
+                        
+                        <!-- <div class="navbar-item has-dropdown is-hoverable"> -->
+                            <!-- <a class="navbar-link"> -->
+                                <!-- Links -->
+                            <!-- </a> -->
+                            <!-- <div class="navbar-dropdown"> -->
+                            <!-- </div> -->
+                            <!-- end of navbar dropdown -->
+                        <!-- </div> -->
+                    </div> <!-- end of navbar start(left side) -->
+
+                    <!-- right side of navbar-->
+                    <div class="navbar-end">
+                        <!-- {% if current_user.is_authenticated %} -->
+                        <a href="{{ url_for('profile') }}" class="navbar-item">
+                            Profile
+                        </a>
+                        <!-- {% endif %} -->
+
+                        <!-- {% if not current_user.is_authenticated %} -->
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('login') }}" class="button is-success">
+                                    <strong>Login</strong>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- {% endif %} -->
+
+                        <!-- {% if not current_user.is_authenticated %} -->
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('register') }}" class="button is-primary">
+                                    <strong>Sign Up</strong>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('forgotPassword') }}" class="button is-info">
+                                    <strong>Forgot Password</strong>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- {% endif %} -->
+
+                        <!-- {% if current_user.is_authenticated %} -->
+                        <a href="{{ url_for('logout') }}" class="navbar-item">
+                            Logout
+                        </a>
+                        <!-- {% endif %} -->
+                    </div> <!-- end of navbar-end (right side) -->
+
+                </div>
+            </nav>
+        </div>
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                {% block content %}{% endblock %}
             </div>
-        </nav>
-    </div>
-    <div class="hero-body">
-        <div class="container has-text-centered">
-            {% block content %}{% endblock %}
         </div>
     </div>
-</section>
 </body>
 </html>
