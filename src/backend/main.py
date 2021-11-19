@@ -180,11 +180,18 @@ class WebApp(UserManager):
             if current_user.is_authenticated: return redirect("/")
             # make the form for both GET & POST (to show and parse respectively)
             lib_systems_dict = self.get_all_library_systems()
-            # Covert sys_id:sys_name -> sys_name:sys_name
+            # Convert sys_id:sys_name -> sys_name:sys_name
             lib_systems = list(map(lambda sys_name: (sys_name, sys_name), lib_systems_dict.values()))
-            print(lib_systems)
+
+            # Start by showing All libraries. Eventually this is reduced.
+            libraries_dict = self.get_all_libraries()
+            print(libraries_dict)
+            # Convert lib_id:lib_name -> lib_name:lib_name
+            libraries = list(map(lambda lib_name: (lib_name, lib_name), libraries_dict.values()))
+
             form = RegistrationForm(self._app, user_manager=self)
             form.lib_sys_name.choices = lib_systems
+            form.lib_name.choices = libraries
 
             if request.method == "POST" and form.validate_on_submit():
                 # Get the library id

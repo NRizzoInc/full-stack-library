@@ -21,12 +21,9 @@ class RegistrationForm(FlaskForm):
     # TODO: add validation/method to restrict registering as employee
     is_employee = BooleanField("Are You an Employee?", validators=[])
 
-    # lib_name = StringField("Library Name", validators=[DataRequired()])
-    # choices = (value, label)
-    # might need DynamicSelectForm because the options are based on the system
-    lib_name = StringField("Library Name", validators=[DataRequired()])
-
     # At run time generate the choices https://wtforms.readthedocs.io/en/2.3.x/fields/#wtforms.fields.SelectField
+    # choices = (value, label)
+    lib_name = SelectField("Library Name", validators=[DataRequired()])
     lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
 
     username = StringField('Username', validators=[DataRequired()])
@@ -42,8 +39,9 @@ class RegistrationForm(FlaskForm):
 
         cls = self.__class__ # get reference to cls
         cls.username = StringField('Username', validators=[DataRequired(), self.validateUsername])
-        cls.lib_name = StringField("Library Name", validators=[DataRequired(), self.validateLibSystemName, self.validateLibName])
+
         # choices = (value, label)
+        cls.lib_name = SelectField("Library Name", validators=[DataRequired(), self.validateLibSystemName, self.validateLibName])
         cls.lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
 
     def validateUsername(self, form, field) -> bool():

@@ -809,7 +809,7 @@ DELIMITER $$
 CREATE PROCEDURE get_all_libraries()
 BEGIN
   -- Needed for validation of register. Can't be function because multiple rows returned
-  SELECT library_id, library_name FROM library;
+  SELECT library_id, library_name FROM library ORDER BY library_name ASC;
 END $$
 -- resets the DELIMETER
 DELIMITER ;

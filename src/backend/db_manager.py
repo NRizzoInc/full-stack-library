@@ -155,10 +155,13 @@ class DB_Manager():
         """Returns a dictionary of {lib_id: lib_name}"""
         try:
             self.cursor.execute("call get_all_libraries()")
-            library_list = self.cursor.fetchmany()
-            # Flatten 2D dict (of rows) into 1 dict
-            library_dict = {lib_id:lib_name for id_name_pair in library_list
-                                for lib_id,lib_name in id_name_pair.items()}
+            library_list = self.cursor.fetchall()
+            # Flatten 3D list of dict (of rows) into 1 dict
+            library_dict = {}
+            for row in library_list:
+                # each row is {id: id, sys_name: name}
+                id_name_list = list(row.values())
+                library_dict[id_name_list[0]] = id_name_list[1]
             return library_dict
         except:
             return dict()
