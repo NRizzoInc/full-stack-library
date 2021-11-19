@@ -886,6 +886,49 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS get_card_num_by_user_id;
+DELIMITER $$
+CREATE FUNCTION get_card_num_by_user_id(user_id_p INT)
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+ DECLARE lib_card_num_out INT;
+
+  SELECT lib_cards.lib_card_num
+  INTO lib_card_num_out
+  FROM lib_user
+  JOIN lib_cards ON lib_user.lib_card_id = lib_cards.lib_card_id
+  WHERE lib_user.user_id = user_id_p
+  LIMIT 1;
+  
+  RETURN(lib_card_num_out);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS get_card_num_by_username;
+DELIMITER $$
+CREATE FUNCTION get_card_num_by_username(username_p VARCHAR(50))
+ RETURNS INT 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+ DECLARE lib_card_num_out INT;
+
+  SELECT lib_cards.lib_card_num
+  INTO lib_card_num_out
+  FROM lib_user
+  JOIN lib_cards ON lib_user.lib_card_id = lib_cards.lib_card_id
+  WHERE lib_user.username = username_p 
+  LIMIT 1;
+  
+  RETURN(lib_card_num_out);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####

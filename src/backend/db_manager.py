@@ -215,6 +215,26 @@ class DB_Manager():
         except:
             return None
 
+    def get_card_num_by_user_id(self, user_id) -> Optional[int]:
+        """Returns a user's library card# or None if user doesnt exist. Call AFTER addUser()"""
+        try:
+            self.cursor.execute("select get_card_num_by_user_id(%s)", (user_id))
+            lib_card_num = list(self.cursor.fetchone().values())[0]
+            return int(lib_card_num)
+        except Exception as err:
+            print(f"Failed to get lib card num by user id: {err}")
+
+    def get_card_num_by_username(self, username) -> Optional[int]:
+        """Returns a user's library card# or None if user doesnt exist. Call AFTER addUser()"""
+        try:
+            self.cursor.execute("select get_card_num_by_username(%s)", (username))
+            lib_card_num = list(self.cursor.fetchone().values())[0]
+            return int(lib_card_num)
+        except Exception as err:
+            print(f"Failed to get lib card num by username: {err}")
+            return None
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
     parser.add_argument(

@@ -156,7 +156,8 @@ class WebApp(UserManager):
             # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
             # call loadUser() / @user_loader in userManager.py
             user_id = self.getUserIdFromUsername(form.username.data)
-            user = User(user_id)
+            lib_card_num = self.get_card_num_by_user_id(user_id)
+            user = User(user_id, lib_card_num)
             login_user(user, remember=form.rememberMe.data)
 
             # route to original destination
@@ -193,7 +194,9 @@ class WebApp(UserManager):
                 if (add_res == -1):
                     flash("Username already taken")
                 elif (add_res == 1):
-                    flash('Congratulations, you are now a registered user!')
+                    card_num = self.get_card_num_by_username(form.username.data)
+                    flash("Congratulations, you are now a registered user! \
+                          Your library card number is " + str(card_num))
                     return redirect(url_for("login"))
                 elif (add_res == 0):
                     flash('Registration Failed!')
