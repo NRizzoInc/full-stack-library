@@ -52,9 +52,13 @@
                     <!-- right side of navbar-->
                     <div class="navbar-end">
                         {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('profile') }}" class="navbar-item">
-                            Profile
-                        </a>
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('profile') }}" class="button is-primary">
+                                    Profile
+                                </a>
+                            </div>
+                        </div>
                         {% endif %}
 
                         {% if not current_user.is_authenticated %}
@@ -88,9 +92,13 @@
                         {% endif %}
 
                         {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('logout') }}" class="navbar-item">
-                            Logout
-                        </a>
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('logout') }}" class="button is-warning">
+                                    <strong>Logout</strong>
+                                </a>
+                            </div>
+                        </div>
                         {% endif %}
                     </div> <!-- end of navbar-end (right side) -->
 
