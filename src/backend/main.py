@@ -192,14 +192,14 @@ class WebApp(UserManager):
                     form.password.data
                 )
                 if (add_res == -1):
-                    flash("Username already taken")
+                    flash("Username already taken", "is-danger")
                 elif (add_res == 1):
                     card_num = self.get_card_num_by_username(form.username.data)
                     flash("Congratulations, you are now a registered user! \
-                          Your library card number is " + str(card_num))
+                          Your library card number is " + str(card_num), "is-success")
                     return redirect(url_for("login"))
                 elif (add_res == 0):
-                    flash('Registration Failed!')
+                    flash('Registration Failed!', "is-danger")
             elif request.method == "POST":
                 print("Registration Validation Failed")
 
@@ -224,7 +224,7 @@ class WebApp(UserManager):
         @login_required
         def logout():
             logout_user()
-            flash("Successfully logged out!")
+            flash("Successfully logged out!", "is-success")
             return redirect("/login")
 
     def printSites(self):

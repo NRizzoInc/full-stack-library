@@ -43,7 +43,7 @@ class RegistrationForm(FlaskForm):
         # prove that username is not already taken (if taken != None & not taken == None)
         if self.user_manager.doesUsernameExist(form.username.data):
             errMsg = "Username " + form.username.data + " is already taken, choose another one"
-            flash(errMsg)
+            flash(errMsg, "is-danger")
             raise ValidationError(message=errMsg) # prints under box
             return errMsg
         else:
@@ -56,7 +56,7 @@ class RegistrationForm(FlaskForm):
         if not self.user_manager.is_lib_in_sys(form.lib_name.data, form.lib_sys_name.data):
             errMsg = "Library " + str(form.lib_name.data) + " is not in Library System"
             errMsg += str(form.lib_sys_name.data) + ", please try again"
-            # flash(errMsg)
+            # flash(errMsg, "is-danger")
             raise ValidationError(message=errMsg) # prints under box
         else:
             return True
@@ -65,7 +65,7 @@ class RegistrationForm(FlaskForm):
         is_valid_system = self.user_manager.does_lib_system_exist(form.lib_sys_name.data)
         if not is_valid_system:
             errMsg = "Library System '" + str(form.lib_sys_name.data) + "' does not exist, please try again"
-            # flash(errMsg)
+            # flash(errMsg, "is-danger")
             # Because this comes before validateLibName
             raise StopValidation(message=errMsg) # prints under box
         else:
