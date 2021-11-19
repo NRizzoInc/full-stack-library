@@ -156,8 +156,13 @@ class WebApp(UserManager):
             # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
             # call loadUser() / @user_loader in userManager.py
             user_id = self.getUserIdFromUsername(form.username.data)
-            user = User(user_id)
+            lib_card_num = self.get_card_num_by_user_id(user_id)
+            user = User(user_id, lib_card_num)
             login_user(user, remember=form.rememberMe.data)
+
+            # two seperate flashes for diff categories
+            flash("Successfully logged in!", "is-success")
+            flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
 
             # route to original destination
             next = flask.request.args.get('next')
@@ -191,12 +196,14 @@ class WebApp(UserManager):
                     form.password.data
                 )
                 if (add_res == -1):
-                    flash("Username already taken")
+                    flash("Username already taken", "is-danger")
                 elif (add_res == 1):
-                    flash('Congratulations, you are now a registered user!')
+                    card_num = self.get_card_num_by_username(form.username.data)
+                    flash("Congratulations, you are now a registered user! \
+                          Your library card number is " + str(card_num), "is-success")
                     return redirect(url_for("login"))
                 elif (add_res == 0):
-                    flash('Registration Failed!')
+                    flash('Registration Failed!', "is-danger")
             elif request.method == "POST":
                 print("Registration Validation Failed")
 
@@ -221,7 +228,7 @@ class WebApp(UserManager):
         @login_required
         def logout():
             logout_user()
-            flash("Successfully logged out!")
+            flash("Successfully logged out!", "is-success")
             return redirect("/login")
 
     def printSites(self):

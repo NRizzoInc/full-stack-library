@@ -27,7 +27,7 @@ class LoginForm(FlaskForm, UserManager):
         """Returns True if successful, otherwise raise ValidationError which shows on screen"""
         if not self.user_manager.checkPwdMatches(form.username.data, form.password.data):
             errMsg = "Invalid username or password"
-            # flash(errMsg)
+            # flash(errMsg, "is-danger")
             raise ValidationError(message=errMsg) # prints under box
         else:
             return True
@@ -40,7 +40,7 @@ class LoginForm(FlaskForm, UserManager):
         # check that username is not already taken
         if not self.user_manager.doesUsernameExist(form.username.data):
             errMsg = "Invalid username or password"
-            flash(errMsg)
+            flash(errMsg, "is-danger")
             raise StopValidation(message=errMsg) # prints under box
         else:
             return True

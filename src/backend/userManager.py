@@ -49,7 +49,8 @@ class UserManager(LoginManager, DB_Manager):
                 \n@Return: Reference to the User class related to this userToken
             """
             # create an object to hold the user's id & functions (ie checkout, return, etc)
-            return User(user_id)
+            lib_card_num = self.get_card_num_by_user_id(user_id)
+            return User(user_id, lib_card_num)
 
         @self.unauthorized_handler
         def onNeedToLogIn():

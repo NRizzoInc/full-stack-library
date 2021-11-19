@@ -28,7 +28,7 @@ class ForgotPwdForm(FlaskForm, UserManager):
         """Checks if username and library card match and are valid for a given user"""
         if not self.user_manager.checkLibCardMatchesUsername(form.username.data, form.card_num.data):
             errMsg = "Invalid username or library card number"
-            # flash(errMsg)
+            # flash(errMsg, "is-danger")
             raise ValidationError(message=errMsg)
         else:
             return True
