@@ -160,6 +160,10 @@ class WebApp(UserManager):
             user = User(user_id, lib_card_num)
             login_user(user, remember=form.rememberMe.data)
 
+            # two seperate flashes for diff categories
+            flash("Successfully logged in!", "is-success")
+            flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
+
             # route to original destination
             next = flask.request.args.get('next')
             isNextUrlBad = next == None or not is_safe_url(next, self._urls)
