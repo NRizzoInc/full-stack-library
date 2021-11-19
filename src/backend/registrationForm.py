@@ -5,9 +5,11 @@
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.fields.core import SelectField
 from wtforms.fields.html5 import DateField
 from wtforms.validators import ValidationError, DataRequired, EqualTo, StopValidation
 from flask import flash, Flask
+from typing import Optional, List, Tuple
 
 #--------------------------------OUR DEPENDENCIES--------------------------------#
 from userManager import UserManager
@@ -19,22 +21,30 @@ class RegistrationForm(FlaskForm):
     # TODO: add validation/method to restrict registering as employee
     is_employee = BooleanField("Are You an Employee?", validators=[])
 
+    # lib_name = StringField("Library Name", validators=[DataRequired()])
+    # choices = (value, label)
+    # might need DynamicSelectForm because the options are based on the system
     lib_name = StringField("Library Name", validators=[DataRequired()])
-    lib_sys_name = StringField("Library System Name", validators=[DataRequired()])
+
+    # At run time generate the choices https://wtforms.readthedocs.io/en/2.3.x/fields/#wtforms.fields.SelectField
+    lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
 
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password',  validators=[DataRequired()])
     password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Register')
 
-    def __init__(self, flaskApp: Flask, user_manager: UserManager, *args, **kwargs):
+    def __init__(self, flaskApp: Flask,
+                user_manager: UserManager,
+                *args, **kwargs):
         FlaskForm.__init__(self, *args, **kwargs)
         self.user_manager = user_manager
 
         cls = self.__class__ # get reference to cls
         cls.username = StringField('Username', validators=[DataRequired(), self.validateUsername])
         cls.lib_name = StringField("Library Name", validators=[DataRequired(), self.validateLibSystemName, self.validateLibName])
-        cls.lib_sys_name = StringField("Library System Name", validators=[DataRequired()])
+        # choices = (value, label)
+        cls.lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
 
     def validateUsername(self, form, field) -> bool():
         """

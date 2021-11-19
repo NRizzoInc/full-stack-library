@@ -818,7 +818,7 @@ DELIMITER $$
 CREATE PROCEDURE get_all_library_systems()
 BEGIN
   -- Needed for validation of register. Can't be function because multiple rows returned
-  SELECT library_sys_id, library_sys_name FROM library_system;
+  SELECT library_sys_id, library_sys_name FROM library_system ORDER BY library_sys_name ASC;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
