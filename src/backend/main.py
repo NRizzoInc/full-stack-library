@@ -86,13 +86,20 @@ class WebApp(UserManager):
         def search_book():
             form = bookLookupForm(request.form)
             url = "/"
-            # TODO: actually do sql query
-            # book_id, title, num_avail
-            serach_res = [
-                BookSearchCell(2, 'book2', 50),
-                BookSearchCell(5, 'book5', 100)
-            ]
-            search_table = BookSearchTable(serach_res)
+            raw_res_list = self.search_for_book(form.book_title.data)
+
+            # Keep adding to the search results list with cell objects
+            # Will ad-hoc generate a table on the webpage with all the results
+            search_res = []
+            for result in raw_res_list:
+                search_res.append(
+                    BookSearchCell(result['library_name'], result['num_copies_at_library'],
+                        result['num_copies_in_stock'], result['num_checked_out'],
+                        result['number_holds'], result['bookcase_local_num'],
+                        result['bookshelf_local_num'], result['book_id'], form.book_title.data)
+                )
+            # search_res = [BookSearchCell(2, 'book2', 50), BookSearchCell(5, 'book5', 100)]
+            search_table = BookSearchTable(search_res)
 
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)

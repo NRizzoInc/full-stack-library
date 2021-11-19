@@ -299,48 +299,6 @@ DELIMITER ;
 
 -- CALL book_library_locator(id in);
 
--- Takes book title, returns # of copies available, # checked out, and # on hold
-DELIMITER $$
-CREATE PROCEDURE available_hold_count(IN booktitle_p VARCHAR(50))
-BEGIN
-  WITH 
-  -- the book title 
-  b_title AS(
-   SELECT title FROM book 
-    WHERE (title = booktitle_p)),
-  
-  -- all copies of this book in the system
-  copies_all AS(
-   SELECT book_id FROM book 
-    WHERE (title = booktitle_p)),
-  
-  -- all copies that are checked out
-  copies_checked_out AS(
-   SELECT book_id FROM checked_out_books 
-     WHERE book_id IN (SELECT * FROM all_copies)),
-    
-    -- all books in the system that are NOT checked out
-  num_copies_available AS(
-   SELECT count(*) AS Number_Available FROM copies_all 
-    WHERE (book_id.copies_all NOT IN (SELECT * FROM copies_checked_out))),
-    
--- number of copies that are checked out
-  num_copies_checked_out AS(
-   SELECT count(*) AS Number_Checked_Out FROM checked_out_books 
-     WHERE book_id IN (SELECT * FROM all_copies)),
-     
--- number of copies that are on hold
-  num_copies_on_hold AS(
-   SELECT count(*) AS Number_On_Hold FROM holds 
-     WHERE (holds.book_id = (SELECT * FROM copies_ALL LIMIT 1)))
-   
-   SELECT b_title.title, Number_Available, Number_Checked_Out, Number_On_Hold
-    FROM b_title, num_copies_available, num_copies_checked_out, num_copies_on_hold;
-   
-END $$
--- resets the DELIMETER
-DELIMITER ;
-
 -- Lists the library branch where each available copy of a book is located
 DELIMITER $$
 CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50))
@@ -358,7 +316,7 @@ BEGIN
    WHERE (title = booktitle_p)
    GROUP BY library.library_id),
 
-  -- Get the Copies that are checked out
+  -- Get the Copies that are checked out at a given library
   num_copies_taken AS(
     SELECT all_copies.book_id, all_copies.library_id, COUNT(checked_out_books.book_id) AS num_checked_out
     FROM all_copies
@@ -384,7 +342,7 @@ BEGIN
         GROUP BY num_copies_available.book_id
   )
   
-  SELECT book_id, library_name, library_id, bookcase_local_num, bookshelf_local_num,
+  SELECT library_name, library_id, bookcase_local_num, bookshelf_local_num,
     bookcase_id, bookshelf_id, num_copies_at_library, num_checked_out, num_copies_in_stock, number_holds
     FROM num_holds;
 

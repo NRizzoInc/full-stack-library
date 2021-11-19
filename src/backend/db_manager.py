@@ -165,6 +165,15 @@ class DB_Manager():
         except:
             return False
 
+    def search_for_book(self, book_name: str):
+        # try:
+        self.cursor.execute("call search_for_book(%s)", (book_name))
+        # Result is a list of dictionaries where the key's are repeated
+        search_res = self.cursor.fetchall()
+        return search_res
+        # except:
+        #     return [{}]
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
     parser.add_argument(
