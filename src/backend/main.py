@@ -190,8 +190,11 @@ class WebApp(UserManager):
             libraries = list(map(lambda lib_name: (lib_name, lib_name), libraries_dict.values()))
 
             form = RegistrationForm(self._app, user_manager=self)
-            form.lib_sys_name.choices = lib_systems
-            form.lib_name.choices = libraries
+
+            # Set the options for the dropdowns
+            # Add empty options for blank default
+            form.lib_sys_name.choices = [('', '')] + lib_systems
+            form.lib_name.choices = [('', '')] + libraries
 
             if request.method == "POST" and form.validate_on_submit():
                 # Get the library id
