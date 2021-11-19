@@ -3,8 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="../static/images/library_icon.png"> 
     <title>{{ title }}</title>
+
     <link rel="stylesheet" href="../static/css/bulma.min.css" />  <!-- https://bulma.io/documentation/components/navbar/ -->
+
+    <script src="../static/js/extern/jquery-3.5.1.min.js"></script>
 </head>
 <body>
 <section class="hero is-fullheight" style="background-color:#C4FCEF;">
@@ -27,6 +31,9 @@
                         </a>
                         <a href="{{ url_for('logout') }}" class="navbar-item">
                             Logout
+                        </a>
+                        <a href="{{ url_for('forgotPassword') }}" class="navbar-item">
+                            Forgot-Password
                         </a>
                     </div>
                 </div>
