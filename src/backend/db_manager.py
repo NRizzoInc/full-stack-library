@@ -165,14 +165,17 @@ class DB_Manager():
         except:
             return False
 
-    def search_for_book(self, book_name: str):
-        # try:
-        self.cursor.execute("call search_for_book(%s)", (book_name))
-        # Result is a list of dictionaries where the key's are repeated
-        search_res = self.cursor.fetchall()
-        return search_res
-        # except:
-        #     return [{}]
+    def search_for_book(self, book_name: str, lib_sys_id: int):
+        """Search for all copies of the book within the library system.
+        Limit the results to within the library system because a user can ONLY checkout
+        a book if they belong to a library within the system"""
+        try:
+            self.cursor.execute("call search_for_book(%s, %s)", (book_name, lib_sys_id))
+            # Result is a list of dictionaries where the key's are repeated
+            search_res = self.cursor.fetchall()
+            return search_res
+        except:
+            return None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")

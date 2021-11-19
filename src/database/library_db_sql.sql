@@ -301,7 +301,7 @@ DELIMITER ;
 
 -- Lists the library branch where each available copy of a book is located
 DELIMITER $$
-CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50))
+CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50), IN lib_sys_id_p INT)
 BEGIN
 -- This cannot be a function because a table is returned
  WITH
@@ -313,7 +313,7 @@ BEGIN
    JOIN bookshelf ON book.bookshelf_id = bookshelf.bookshelf_id
    JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
    JOIN library ON bookcase.library_id = library.library_id
-   WHERE (title = booktitle_p)
+   WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
    GROUP BY library.library_id),
 
   -- Get the Copies that are checked out at a given library
@@ -342,7 +342,7 @@ BEGIN
         GROUP BY num_copies_available.book_id
   )
   
-  SELECT library_name, library_id, bookcase_local_num, bookshelf_local_num,
+  SELECT book_id, library_name, library_id, bookcase_local_num, bookshelf_local_num,
     bookcase_id, bookshelf_id, num_copies_at_library, num_checked_out, num_copies_in_stock, number_holds
     FROM num_holds;
 
