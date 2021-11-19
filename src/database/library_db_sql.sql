@@ -523,6 +523,8 @@ CREATE PROCEDURE insert_user(
   IN pwd VARCHAR(50)
 ) BEGIN
   DECLARE new_user_id INT;
+  DECLARE new_lib_card_num INT;
+  DECLARE new_lib_card_id INT;
   -- in case insert into lib_user fails, start a transaction that can rollback other insertions
   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
   BEGIN
@@ -550,7 +552,7 @@ CREATE PROCEDURE insert_user(
   
   -- insert into user_register
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
-  COMMIT
+  COMMIT;
 
 
 END $$
@@ -652,9 +654,9 @@ BEGIN
     SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
     
     INSERT INTO book (isbn, title, author, publisher, is_audio_book, 
-        num_pages, checkout_length_days, late_fee_per_day, bookshelf_id)
+        num_pages, checkout_length_days, book_dewey, late_fee_per_day, bookshelf_id)
     VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, 
-        in_num_pages, in_checkout_length_days, in_late_fee_per_day, placement_bookshelf_id);
+        in_num_pages, in_checkout_length_days, in_book_dewey, in_late_fee_per_day, placement_bookshelf_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
