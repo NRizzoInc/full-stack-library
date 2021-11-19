@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+<!doctype html>
+<html>
+<body>
+    {% block content %}
+    <div class="column is-4 is-offset-4">
+        <h3 class="title">Library Search</h3>
+        <div class="box">
+            <form action="/search_book", method="post">
+                {{ form.hidden_tag() }}
+                <div class="field">
+                    <div class="control">
+                    {% include "flash.html" %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ form.book_title.label(class="label") }}
+                        {{ form.book_title(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in form.book_title.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p>{{ form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
+            </form>
+        </div>
+    {% endblock %}
+</body>
+
+
+</html>

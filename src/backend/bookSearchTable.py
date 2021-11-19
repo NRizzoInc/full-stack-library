@@ -4,6 +4,7 @@ from flask_table.columns import LinkCol
 from typing import Optional, Dict, List
 
 class BookSearchTable(Table):
+    classes = ["table", "is-bordered", "is-striped", "is-hoverable", "is-fullwidth"]
     lib_name = Col('Library Name')
     total_num_at_lib = Col('Total Number of Copies at Library')
     num_avail = Col('Number of Copies Available')

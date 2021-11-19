@@ -80,6 +80,20 @@ class DB_Manager():
         except:
             return -1
 
+    def checkLibCardMatchesUsername(self, username: str, cardnum: int) -> bool:
+        """Returns True if the username and cardnum are valid for a user, False if dne, error, or invalid"""
+        try:
+            self.cursor.execute("call check_lib_card(%s, %s)", (username, cardnum))
+            check_card_res = self.cursor.fetchall()
+            valid_match_str = (list(check_card_res[0].values()))[0]
+            valid_match = True if \
+                valid_match_str == True or \
+                valid_match_str == "True" or \
+                valid_match_str == 1 else False
+            return valid_match
+        except:
+            return False
+
     def addUser(self,
         fname: str,
         lname: str,
@@ -101,6 +115,16 @@ class DB_Manager():
         except Exception as error:
             print("Error adding user: " + error)
             return 0
+
+    def updatePwd(self, username: str, pwd: str) -> bool:
+        """Updates a user's password (with 'username'). NOTE: Only call after validation. Return True = success"""
+        try:
+            num_rows = self.cursor.execute("call update_pwd(%s, %s)", (username, pwd))
+            # only one row should have been affected
+            if num_rows == 1: self.conn.commit()
+            return num_rows == 1
+        except:
+            return False
 
     def removeUser(self, userToken):
         """

@@ -21,12 +21,13 @@ from flask_login import login_user, current_user, login_required, logout_user
 
 
 #--------------------------------Project Includes--------------------------------#
-from formManager import bookLookupForm
+from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
 from loginForm import LoginForm
+from forgotPasswordForm import ForgotPwdForm
 
 class WebApp(UserManager):
     def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
@@ -79,14 +80,19 @@ class WebApp(UserManager):
 
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
-        def createMainPage():
-            return render_template("mainPage.html", title="Library DB App", form=bookLookupForm())
+        def index():
+            return render_template("index.html", title="Library DB App", form=BookSearchForm())
+
+        @self._app.route("/", methods=["GET"])
+        def profile():
+            return render_template("profile.html", title="Library DB App")
+
 
     def createFormPages(self):
         @self._app.route('/search_book', methods=['POST'])
         @login_required
         def search_book():
-            form = bookLookupForm(request.form)
+            form = BookSearchForm(request.form)
             url = "/"
             # Get the library system of the user to search for
             lib_sys_id = self.get_users_lib_sys_id(current_user.id)
@@ -192,10 +198,24 @@ class WebApp(UserManager):
                 elif (add_res == 0):
                     flash('Registration Failed!')
             elif request.method == "POST":
-                print("Validation Failed")
+                print("Registration Validation Failed")
 
             # on GET or failure, reload
             return render_template('registration.html', title='LibraryDB Registration', form=form)
+
+        @self._app.route("/forgot-password", methods=["GET", "POST"])
+        def forgotPassword():
+            form = ForgotPwdForm(self._app, user_manager=self)
+
+            if request.method == "POST" and form.validate_on_submit():
+                # actually change a user's login given info is valid/allowed
+                self.updatePwd(form.username.data, form.new_password.data)
+                return redirect("/")
+            elif request.method == "POST":
+                print("Forgot Password Reset Failed")
+
+            # on GET or failure, reload
+            return render_template('forgotPasswordForm.html', title='LibraryDB Forgot Password', form=form)
 
         @self._app.route("/logout", methods=["GET", "POST"])
         @login_required
@@ -209,6 +229,7 @@ class WebApp(UserManager):
         print(f"http://localhost:{self._port}/")
         print(f"http://localhost:{self._port}/login")
         print(f"http://localhost:{self._port}/register")
+        print(f"http://localhost:{self._port}/forgot-password")
         print(f"http://localhost:{self._port}/logout")
         print(f"http://localhost:{self._port}/checkout")
         print(f"http://localhost:{self._port}/search_book")

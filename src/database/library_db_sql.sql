@@ -35,11 +35,30 @@ DROP TABLE IF EXISTS library;
         ON UPDATE RESTRICT ON DELETE RESTRICT
  );
  
+
+-- matches lib_card_id to pregenerated UNIQUE card numbers
+DROP TABLE IF EXISTS lib_cards;
+CREATE TABLE lib_cards
+(
+ -- library card numbers are usually 14 digits long
+ -- (but maybe in some systems it might not be and would make this schema not work)
+ -- if wanted to impose limit: check (lib_card_id between 0 and 99999999999999)
+  lib_card_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+  lib_card_num INT NOT NULL UNIQUE
+);
+ 
  DROP TABLE IF EXISTS lib_user;
 -- A user in the library system
 CREATE TABLE lib_user
 (
- user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL AUTO_INCREMENT,
+ user_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+ -- the id of the user's library card, a 14 digit number
+ lib_card_id INT NOT NULL,
+ CONSTRAINT lib_card_id_fk
+    FOREIGN KEY (lib_card_id)
+    REFERENCES lib_cards(lib_card_id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
  first_name VARCHAR(50) NOT NULL,
  last_name VARCHAR(50) NOT NULL,
  dob DATE NOT NULL,
@@ -49,18 +68,10 @@ CREATE TABLE lib_user
  is_employee boolean DEFAULT FALSE,
  
  -- username used to login
- username VARCHAR(50) NOT NULL,
+ username VARCHAR(50) NOT NULL UNIQUE,
  -- password used to login
  lib_password VARCHAR(50) NOT NULL
- 
- -- the id of the user's library card, a 14 digit number
- -- lib_card_id INT NOT NULL
- 
- -- TODO, determine how to format the lib_card_id to always be 14 digits long
- -- with leading zeros
-
 );
-
 
 DROP TABLE IF EXISTS employee;
 -- Represents someone who works at a library in the library system
@@ -512,6 +523,8 @@ CREATE PROCEDURE insert_user(
   IN pwd VARCHAR(50)
 ) BEGIN
   DECLARE new_user_id INT;
+  DECLARE new_lib_card_num INT;
+  DECLARE new_lib_card_id INT;
   -- in case insert into lib_user fails, start a transaction that can rollback other insertions
   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
   BEGIN
@@ -519,19 +532,57 @@ CREATE PROCEDURE insert_user(
   END;
   START TRANSACTION;
 
+  -- create new library card number based on existing
+  SET new_lib_card_num = (
+    -- coalesce handles if no entries in table yet and max is null
+    SELECT coalesce(MAX(lib_card_num)+1, 0)
+    FROM lib_cards
+  );
+
+  -- insert into library card (and get its id)
+  INSERT INTO lib_cards (lib_card_id, lib_card_num) VALUES (DEFAULT, new_lib_card_num);
+  SET new_lib_card_id = LAST_INSERT_ID(); -- get id of last inserted row into a table
+
   -- insert into lib_user
-  INSERT INTO lib_user (user_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password)
+  INSERT INTO lib_user (user_id, lib_card_id, first_name, last_name, dob, num_borrowed, is_employee, username, lib_password)
   -- user_id is auto increment, so specify default behavior
   -- hash the password with MD5 & only ever do checks on the hash (no plaintext passwords)
-  VALUES(DEFAULT, fname, lname, dob, 0, is_employee, username, MD5(pwd));
+  VALUES(DEFAULT, new_lib_card_id, fname, lname, dob, 0, is_employee, username, MD5(pwd));
   SET new_user_id = LAST_INSERT_ID();
   
   -- insert into user_register
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
   COMMIT;
+
+
 END $$
 -- resets the DELIMETER
 DELIMITER ;
+
+-- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd");
+-- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd"); -- will fail bc usernames MUST be unique
+
+DELIMITER $$
+CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
+BEGIN
+  DECLARE does_user_card_match BOOLEAN;
+  SET does_user_card_match = (
+    SELECT COUNT(*) > 0
+    FROM (
+      SELECT 
+          lib_user.lib_card_id
+      FROM lib_user
+      JOIN lib_cards on lib_cards.lib_card_id = lib_user.lib_card_id
+      WHERE (username = username_to_test and card_num = lib_cards.lib_card_num)
+    ) X
+  );
+
+  SELECT does_user_card_match;
+END $$
+DELIMITER ;
+
+-- call check_lib_card("testusername", 0); -- should return true
+-- call check_lib_card("testusername", 1000); -- should return false
 
 -- password is stored in MD5 hash so have to hash given password to check against db
 DELIMITER $$
@@ -603,9 +654,9 @@ BEGIN
     SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
     
     INSERT INTO book (isbn, title, author, publisher, is_audio_book, 
-        num_pages, checkout_length_days, late_fee_per_day, bookshelf_id)
+        num_pages, checkout_length_days, book_dewey, late_fee_per_day, bookshelf_id)
     VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, 
-        in_num_pages, in_checkout_length_days, in_late_fee_per_day, placement_bookshelf_id);
+        in_num_pages, in_checkout_length_days, in_book_dewey, in_late_fee_per_day, placement_bookshelf_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
