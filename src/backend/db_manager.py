@@ -284,6 +284,15 @@ class DB_Manager():
             print(f"Failed to get lib card num by username: {err}")
             return None
 
+    def checkout_book(self, user_id: int, book_id: int, lib_sys_id: int, lib_id: int) -> bool:
+        """Returns True if success"""
+        try:
+            self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
+                                (user_id, book_id, lib_sys_id, lib_id))
+            return True
+        except Exception as err:
+            print(f"Failed to checkout book: {err}")
+            return False
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")

@@ -140,23 +140,45 @@ class WebApp(UserManager):
 
     def createCheckoutPages(self):
         #TODO: make this a login required page (or at least have them login right now)
-        @self._app.route('/checkout', methods=['POST', 'GET'])
+        @self._app.route('/checkout/<string:book_title>/<int:book_id>/<string:is_hold>', methods=['GET', 'POST'])
         @login_required
-        def checkout():
-            title = request.args.get('book_title')
+        def checkout(book_title: str, book_id: int, is_hold: bool):
+            """Actually checks out a book based on url params
+            Args:
+                book_title (str): The title of the book
+                book_id (int): The specific copy of the book to checkout
+                is_hold (bool): True if requesting a hold on the book
+            """
             if request.method == 'GET':
-                return render_template("checkout.html", book_title=title)
+                return render_template("checkout.html", book_title=book_title)
             elif request.method == "POST":
                 # TODO: make a query / call procedure for checking out a book
-                print(f"Checking out book {title}")
+                user_id = current_user.id
+                lib_sys_id = self.get_users_lib_sys_id(user_id)
+                lib_id = self.get_lib_id_from_user_id(user_id)
+                is_hold = bool(request.args.get("is_hold") == "is_hold")
+
+                # error check
+                if(book_id == None or lib_sys_id == None or lib_id == None):
+                    flash("Invalid Checkout!", "is-danger")
+                    # try to go back, else returns to index
+                    return redirect(url_for("index"))
+                
+                # checkout book w/ error check
+                if(not self.checkout_book(user_id, book_id, lib_sys_id, lib_id)):
+                    flash("Failed to checkout book!", "is-danger")
+                    return redirect(url_for("index"))
+                
                 # TODO: call procedure to verify user is part of the library system the book belongs to
                 # TODO: call checkout procedure and return to home
                 # TODO: have due_date be part of procedure results
                 # TODO: have success_status include if they're on hold or not + details
-                return redirect(url_for("checkoutResult",
+                return redirect(url_for(
+                    "checkoutResult",
                     success_status="Success",
-                    book_title=title,
-                    due_date="Sept 20, 2022"))
+                    book_title=book_title,
+                    due_date="Sept 20, 2022"
+                ))
 
         @self._app.route('/checkoutResult', methods=['GET'])
         @login_required

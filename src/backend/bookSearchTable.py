@@ -1,5 +1,5 @@
 from flask_table import Table, Col
-from flask_table.columns import LinkCol
+from flask_table.columns import LinkCol, ButtonCol
 
 from typing import Optional, Dict, List
 
@@ -12,12 +12,16 @@ class BookSearchTable(Table):
     num_holds = Col('Number of Holds')
     case_num = Col('Bookcase # in Library')
     shelf_num = Col('Bookshelf # in Library')
-    checkout = LinkCol(
+    checkout = ButtonCol(
         name='Perform Checkout/Place Hold',
         endpoint="checkout",
-        url_kwargs=dict(book_id="book_id",
-                        book_title="book_title",
-                        is_place_hold="is_place_hold")
+        url_kwargs=dict(
+            book_title="book_title",
+            book_id="book_id",
+            is_hold="is_hold"
+        ),
+        # change class of cells
+        button_attrs= {"class": "button is-link"}
     )
     border = True
 
@@ -39,12 +43,12 @@ class BookSearchCell(object):
         # Used for checkout url
         self.book_id = book_id
         self.book_title = book_title
-        self.is_place_hold = num_avail == 0
+        self.is_hold = num_avail == 0
         self.checkout = {
-            "book_id": book_id,
             "book_title": book_title,
+            "book_id": book_id,
             # If there are no book left, a hold should be placed
-            "is_place_hold": self.is_place_hold
+            "is_hold": "hold" if self.is_hold else "checkout"
         }
 
 def create_search_cells(raw_res_list : List[Dict], book_title : str) -> List[BookSearchCell]:
