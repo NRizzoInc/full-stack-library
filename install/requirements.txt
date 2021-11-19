@@ -8,3 +8,4 @@ Werkzeug==1.0.1
 pymysql==1.0.2
 flask-Table==0.5.0
 is-safe-url==1.0
+WTForms==2.3.3

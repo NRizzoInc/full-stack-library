@@ -36,7 +36,20 @@
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}
         </p>
-
+        <p>
+            {{ form.lib_sys_name.label }}<br>
+            {{ form.lib_sys_name(size=32) }}<br>
+            {% for error in form.lib_sys_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.lib_name.label }}<br>
+            {{ form.lib_name(size=32) }}<br>
+            {% for error in form.lib_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
         <p>
             {{ form.username.label }}<br>
             {{ form.username(size=32) }}<br>

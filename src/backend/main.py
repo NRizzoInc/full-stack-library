@@ -22,7 +22,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 
 #--------------------------------Project Includes--------------------------------#
 from formManager import bookLookupForm
-from bookSearchTable import BookSearchTable, BookSearchCell
+from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
@@ -84,16 +84,19 @@ class WebApp(UserManager):
 
     def createFormPages(self):
         @self._app.route('/search_book', methods=['POST'])
+        @login_required
         def search_book():
             form = bookLookupForm(request.form)
             url = "/"
-            # TODO: actually do sql query
-            # book_id, title, num_avail
-            serach_res = [
-                BookSearchCell(2, 'book2', 50),
-                BookSearchCell(5, 'book5', 100)
-            ]
-            search_table = BookSearchTable(serach_res)
+            # Get the library system of the user to search for
+            lib_sys_id = self.get_users_lib_sys_id(current_user.id)
+            search_res = []
+            if lib_sys_id is not None:
+                raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
+                search_res = create_search_cells(raw_res_list, form.book_title.data)
+
+            # If the list is empty, "No Items" is displayed
+            search_table = BookSearchTable(search_res)
 
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)
@@ -145,7 +148,7 @@ class WebApp(UserManager):
 
             # username & pwd must be right at this point, so login
             # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
-            # call loadUser() / @user_loader in userManager.py 
+            # call loadUser() / @user_loader in userManager.py
             user_id = self.getUserIdFromUsername(form.username.data)
             user = User(user_id)
             login_user(user, remember=form.rememberMe.data)
@@ -168,10 +171,14 @@ class WebApp(UserManager):
             form = RegistrationForm(self._app, user_manager=self)
 
             if request.method == "POST" and form.validate_on_submit():
+                # Get the library id
+                library_id = self.get_lib_id_from_name(form.lib_name.data, form.lib_sys_name.data)
+
                 # actually add user given info is valid/allowed
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
+                    library_id,
                     form.dob.data,
                     form.is_employee.data,
                     form.username.data,
