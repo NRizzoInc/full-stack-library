@@ -366,18 +366,27 @@ BEGIN
     GROUP BY all_copies.library_id
   ),
   
+  -- Get the number of holds 
   num_copies_available AS(
-    SELECT all_copies.book_id, all_copies.library_name, all_copies.library_id, all_copies.bookcase_local_num, all_copies.bookshelf_local_num,
-        all_copies.bookcase_id, all_copies.bookshelf_id, 
-        all_copies.num_copies_at_library, num_copies_taken.num_checked_out,
+    SELECT all_copies.*, num_copies_taken.num_checked_out,
         (all_copies.num_copies_at_library - num_copies_taken.num_checked_out) AS num_copies_in_stock
     FROM all_copies
     LEFT OUTER JOIN num_copies_taken 
     ON all_copies.book_id = num_copies_taken.book_id
-  )
+  ),
   
   -- Find how many holds there are for the book at each library
-  SELECT * FROM num_copies_available;
+  num_holds AS(
+    SELECT num_copies_available.*, COUNT(holds.book_id) AS number_holds
+        FROM num_copies_available
+        LEFT OUTER JOIN holds
+        ON num_copies_available.book_id = holds.book_id
+        GROUP BY num_copies_available.book_id
+  )
+  
+  SELECT book_id, library_name, library_id, bookcase_local_num, bookshelf_local_num,
+    bookcase_id, bookshelf_id, num_copies_at_library, num_checked_out, num_copies_in_stock, number_holds
+    FROM num_holds;
 
  
 END $$
