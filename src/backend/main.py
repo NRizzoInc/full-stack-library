@@ -83,9 +83,9 @@ class WebApp(UserManager):
         def index():
             return render_template("index.html", title="Library DB App", form=BookSearchForm())
 
-        @self._app.route("/", methods=["GET"])
+        @self._app.route("/profile", methods=["GET"])
         def profile():
-            return render_template("profile.html", title="Library DB App")
+            return render_template("profile.html", title="Library DB Profile")
 
 
     def createFormPages(self):
