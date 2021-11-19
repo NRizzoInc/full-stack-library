@@ -90,12 +90,17 @@ class DB_Manager():
         pwd: str
     ) -> int():
         """Adds a user to the database. Return 1 if successful, -1 if username taken, else 0"""
-        if(self.doesUsernameExist(username)): return -1
+        try:
+            if(self.doesUsernameExist(username)):
+                print("Username already exists")
+                return -1
 
-        num_rows = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s, %s)",
-                            (fname, lname, library_id, dob, is_employee, username, pwd))
-        # number of rows affected should = 1
-        return 1 if num_rows == 1 else 0
+            res = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s, %s)",
+                                (fname, lname, library_id, dob, is_employee, username, pwd))
+            return 1
+        except Exception as error:
+            print("Error adding user: " + error)
+            return 0
 
     def removeUser(self, userToken):
         """

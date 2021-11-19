@@ -17,7 +17,7 @@ class RegistrationForm(FlaskForm):
     lname = StringField("Last Name", validators=[DataRequired()])
     dob = DateField("Date of Birth", format='%Y-%m-%d', validators=[DataRequired()])
     # TODO: add validation/method to restrict registering as employee
-    is_employee = BooleanField("Are You an Employee?", validators=[DataRequired()])
+    is_employee = BooleanField("Are You an Employee?", validators=[])
 
     lib_name = StringField("Library Name", validators=[DataRequired()])
     lib_sys_name = StringField("Library System Name", validators=[DataRequired()])
