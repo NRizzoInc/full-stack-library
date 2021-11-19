@@ -51,13 +51,13 @@
 
                     <!-- right side of navbar-->
                     <div class="navbar-end">
-                        <!-- {% if current_user.is_authenticated %} -->
+                        {% if current_user.is_authenticated %}
                         <a href="{{ url_for('profile') }}" class="navbar-item">
                             Profile
                         </a>
-                        <!-- {% endif %} -->
+                        {% endif %}
 
-                        <!-- {% if not current_user.is_authenticated %} -->
+                        {% if not current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">
                                 <a href="{{ url_for('login') }}" class="button is-success">
@@ -65,9 +65,9 @@
                                 </a>
                             </div>
                         </div>
-                        <!-- {% endif %} -->
+                        {% endif %}
 
-                        <!-- {% if not current_user.is_authenticated %} -->
+                        {% if not current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">
                                 <a href="{{ url_for('register') }}" class="button is-primary">
@@ -75,7 +75,9 @@
                                 </a>
                             </div>
                         </div>
+                        {% endif %}
 
+                        {% if not current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">
                                 <a href="{{ url_for('forgotPassword') }}" class="button is-info">
@@ -83,13 +85,13 @@
                                 </a>
                             </div>
                         </div>
-                        <!-- {% endif %} -->
+                        {% endif %}
 
-                        <!-- {% if current_user.is_authenticated %} -->
+                        {% if current_user.is_authenticated %}
                         <a href="{{ url_for('logout') }}" class="navbar-item">
                             Logout
                         </a>
-                        <!-- {% endif %} -->
+                        {% endif %}
                     </div> <!-- end of navbar-end (right side) -->
 
                 </div>
