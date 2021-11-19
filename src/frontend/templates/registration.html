@@ -14,8 +14,8 @@
                 {{ form.hidden_tag() }}
                 <div class="field">
                     <div class="control">
-                        {{ form.fname.label }}<br>
-                        {{ form.fname(class="input is-medium", placeholder="First Name") }}<br>
+                        {{ form.fname.label(class="label") }}
+                        {{ form.fname(class="input is-medium", placeholder="First Name") }}
                         {% for error in form.fname.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -23,8 +23,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ form.lname.label }}<br>
-                        {{ form.lname(class="input is-medium", placeholder="Last Name") }}<br>
+                        {{ form.lname.label(class="label") }}
+                        {{ form.lname(class="input is-medium", placeholder="Last Name") }}
                         {% for error in form.lname.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -32,8 +32,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ form.dob.label }}<br>
-                        {{ form.dob(class="input is-medium") }}<br>
+                        {{ form.dob.label(class="label") }}
+                        {{ form.dob(class="input is-medium") }}
                         {% for error in form.dob.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -41,8 +41,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ form.is_employee.label }}
-                        {{ form.is_employee(size=32) }}<br>
+                        {{ form.is_employee.label(class="checkbox has-text-weight-bold") }}
+                        {{ form.is_employee(class="checkbox") }}
                         {% for error in form.is_employee.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -51,8 +51,8 @@
 
                 <div class="field">
                     <div class="control">
-                        {{ form.lib_sys_name.label }}<br>
-                        {{ form.lib_sys_name(class="input is-medium", placeholder="Library System") }}<br>
+                        {{ form.lib_sys_name.label(class="label") }}
+                        {{ form.lib_sys_name(class="input is-medium", placeholder="Library System") }}
                         {% for error in form.lib_sys_name.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -61,8 +61,8 @@
 
                 <div class="field">
                     <div class="control">
-                        {{ form.lib_name.label }}<br>
-                        {{ form.lib_name(class="input is-medium", placeholder="Library") }}<br>
+                        {{ form.lib_name.label(class="label") }}
+                        {{ form.lib_name(class="input is-medium", placeholder="Library") }}
                         {% for error in form.lib_name.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -71,8 +71,8 @@
 
                 <div class="field">
                     <div class="control">
-                        {{ form.username.label }}<br>
-                        {{ form.username(class="input is-medium", placeholder="username") }}<br>
+                        {{ form.username.label(class="label") }}
+                        {{ form.username(class="input is-medium", placeholder="username") }}
                         {% for error in form.username.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -80,8 +80,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ form.password.label }}<br>
-                        {{ form.password(class="input is-medium", placeholder="password") }}<br>
+                        {{ form.password.label(class="label") }}
+                        {{ form.password(class="input is-medium", placeholder="password") }}
                         {% for error in form.password.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -89,14 +89,14 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ form.password2.label }}<br>
-                        {{ form.password2(class="input is-medium", placeholder="password") }}<br>
+                        {{ form.password2.label(class="label") }}
+                        {{ form.password2(class="input is-medium", placeholder="password") }}
                         {% for error in form.password2.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
                     </div>
                 </div>
-                <p>{{ form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
+                <p>{{ form.submit(class="button is-block is-info is-large is-fullwidth is-success") }}</p>
             </form>
         </div>
     </div>
