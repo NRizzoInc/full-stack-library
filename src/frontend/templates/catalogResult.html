@@ -3,12 +3,11 @@
 <body>
 
     {% block content %}
-    Catalog Results for <b>{{ lib_sys_name }}</b> Library System:
+    Catalog Results for libraries in the system - <b>{{ lib_sys_name }}:</b>
     <br>
         {{ catalog_table }}
-    <br>
     For more information about the books availability, please use our Search Feature:
-    <br>
+    <br><br>
 
         <div class="buttons is-centered">
             <a href="{{ url_for('index') }}" class="button is-link">

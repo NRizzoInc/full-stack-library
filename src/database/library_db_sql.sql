@@ -1012,17 +1012,18 @@ CREATE FUNCTION get_lib_sys_name_from_user_id(in_user_id INT)
  READS SQL DATA
 BEGIN
     DECLARE user_lib_id INT;
-    DECLARE lib_sys_id INT;
+    DECLARE found_lib_sys_id INT;
     DECLARE lib_sys_name VARCHAR(100);
     -- GIVEN a user's id, returns the id of the library system 
     -- SELECT library_system_name INTO lib_sys_name
     SET user_lib_id  = (SELECT library_id FROM user_register WHERE in_user_id = user_id);
-    SET lib_sys_id = (SELECT library_system FROM library WHERE library_id = user_lib_id);
+    SET found_lib_sys_id = (SELECT library_system FROM library WHERE library_id = user_lib_id);
     
     SELECT library_sys_name INTO lib_sys_name
-        WHERE library_sys_id = lib_sys_id;
+        FROM library_system
+        WHERE found_lib_sys_id = library_sys_id;
     
-    RETURN(lib_sys_id);
+    RETURN(lib_sys_name);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
