@@ -108,7 +108,6 @@ class DB_Manager():
             if(self.doesUsernameExist(username)):
                 print("Username already exists")
                 return -1
-
             res = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s, %s)",
                                 (fname, lname, library_id, dob, is_employee, username, pwd))
             return 1
@@ -155,10 +154,13 @@ class DB_Manager():
         """Returns a dictionary of {lib_id: lib_name}"""
         try:
             self.cursor.execute("call get_all_libraries()")
-            library_list = self.cursor.fetchmany()
-            # Flatten 2D dict (of rows) into 1 dict
-            library_dict = {lib_id:lib_name for id_name_pair in library_list
-                                for lib_id,lib_name in id_name_pair.items()}
+            library_list = self.cursor.fetchall()
+            # Flatten 3D list of dict (of rows) into 1 dict
+            library_dict = {}
+            for row in library_list:
+                # each row is {id: id, sys_name: name}
+                id_name_list = list(row.values())
+                library_dict[id_name_list[0]] = id_name_list[1]
             return library_dict
         except:
             return dict()
@@ -177,6 +179,20 @@ class DB_Manager():
             return library_sys_dict
         except:
             return dict()
+    def get_all_librarys_in_system(self, lib_sys_id : str) -> Dict[int, str]:
+        """Returns a dictionary of {lib_id: lib_name}"""
+        try:
+            self.cursor.execute("call get_all_libs_in_system(%s)", lib_sys_id)
+            library_list = self.cursor.fetchall()
+            # Flatten 3D list of dict (of rows) into 1 dict
+            library_dict = {}
+            for row in library_list:
+                # each row is {id: id, sys_name: name}
+                id_name_list = list(row.values())
+                library_dict[id_name_list[0]] = id_name_list[1]
+            return library_dict
+        except:
+            return dict()
 
     def is_lib_in_sys(self, lib_name : str, sys_name : str) -> bool:
         try:
@@ -186,13 +202,29 @@ class DB_Manager():
         except:
             return False
 
-    def does_lib_system_exist(self, sys_name : str) -> bool:
+    def does_lib_system_exist(self, sys_id : str) -> bool:
         try:
-            self.cursor.execute("select is_a_lib_sys(%s)", (sys_name))
+            self.cursor.execute("select is_a_lib_sys(%s)", (sys_id))
             is_valid = list(self.cursor.fetchone().values())[0]
             return bool(is_valid)
         except:
             return False
+
+    def get_lib_sys_name_from_id(self, sys_id: int) -> str:
+        try:
+            self.cursor.execute("select get_lib_sys_name_from_id(%s)", (sys_id))
+            sys_name = list(self.cursor.fetchone().values())[0]
+            return str(sys_name)
+        except:
+            return ""
+
+    def get_lib_name_from_id(self, sys_id: int) -> str:
+        try:
+            self.cursor.execute("select get_lib_name_from_id(%s)", (sys_id))
+            lib_name = list(self.cursor.fetchone().values())[0]
+            return str(lib_name)
+        except:
+            return ""
 
     def search_for_book(self, book_name: str, lib_sys_id: int):
         """Search for all copies of the book within the library system.

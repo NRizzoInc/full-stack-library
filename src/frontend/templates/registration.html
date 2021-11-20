@@ -51,9 +51,11 @@
                 </div>
 
                 <div class="field">
-                    <div class="control">
+                    <div class="control" >
                         {{ form.lib_sys_name.label(class="label") }}
-                        {{ form.lib_sys_name(class="input is-medium", placeholder="Library System") }}
+                        <div class="select is-rounded is-medium is-full select-container">
+                            {{ form.lib_sys_name(class="input", placeholder="Library System") }}
+                        </div>
                         {% for error in form.lib_sys_name.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -63,7 +65,9 @@
                 <div class="field">
                     <div class="control">
                         {{ form.lib_name.label(class="label") }}
-                        {{ form.lib_name(class="input is-medium", placeholder="Library") }}
+                        <div class="select is-rounded is-medium is-full select-container">
+                            {{ form.lib_name(class="input", placeholder="Library") }}
+                        </div>
                         {% for error in form.lib_name.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
