@@ -17,7 +17,7 @@ class BookSearchTable(Table):
         endpoint="checkout",
         url_kwargs=dict(
             book_title="book_title",
-            book_id="book_id",
+            # book_id="book_id",
             is_hold="is_hold"
         ),
         # change class of cells
@@ -30,7 +30,7 @@ class BookSearchCell(object):
                 lib_name, total_num_at_lib, num_avail, num_checked_out,
                 num_holds, case_num, shelf_num,
                 # Used for checkout url
-                book_id, book_title):
+                book_title):
 
         self.lib_name = lib_name
         self.total_num_at_lib = total_num_at_lib
@@ -41,12 +41,12 @@ class BookSearchCell(object):
         self.shelf_num = shelf_num
 
         # Used for checkout url
-        self.book_id = book_id
+        # self.book_id = book_id
         self.book_title = book_title
         self.is_hold = num_avail == 0
         self.checkout = {
             "book_title": book_title,
-            "book_id": book_id,
+            # "book_id": book_id,
             # If there are no book left, a hold should be placed
             "is_hold": "hold" if self.is_hold else "checkout"
         }
@@ -63,6 +63,6 @@ def create_search_cells(raw_res_list : List[Dict], book_title : str) -> List[Boo
                 BookSearchCell(result['library_name'], result['num_copies_at_library'],
                     result['num_copies_in_stock'], result['num_checked_out'],
                     result['number_holds'], result['bookcase_local_num'],
-                    result['bookshelf_local_num'], result['book_id'], book_title )
+                    result['bookshelf_local_num'], book_title)
             )
     return search_res

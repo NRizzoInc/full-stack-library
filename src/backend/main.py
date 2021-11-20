@@ -140,13 +140,12 @@ class WebApp(UserManager):
 
     def createCheckoutPages(self):
         #TODO: make this a login required page (or at least have them login right now)
-        @self._app.route('/checkout/<string:book_title>/<int:book_id>/<string:is_hold>', methods=['GET', 'POST'])
+        @self._app.route('/checkout/<string:book_title>/<string:is_hold>', methods=['GET', 'POST'])
         @login_required
-        def checkout(book_title: str, book_id: int, is_hold: bool):
+        def checkout(book_title: str, is_hold: bool):
             """Actually checks out a book based on url params
             Args:
                 book_title (str): The title of the book
-                book_id (int): The specific copy of the book to checkout
                 is_hold (bool): True if requesting a hold on the book
             """
             if request.method == 'GET':
@@ -159,7 +158,7 @@ class WebApp(UserManager):
                 is_hold = bool(request.args.get("is_hold") == "is_hold")
 
                 # error check
-                if(book_id == None or lib_sys_id == None or lib_id == None):
+                if(book_title == None or lib_sys_id == None or lib_id == None):
                     flash("Invalid Checkout!", "is-danger")
                     # try to go back, else returns to index
                     return redirect(url_for("index"))
@@ -167,16 +166,16 @@ class WebApp(UserManager):
                 if not is_hold:
                     # checkout book w/ error check
                     try:
-                        checkout_res = self.checkout_book(user_id, book_id, lib_sys_id, lib_id)
+                        checkout_res = self.checkout_book(user_id, book_title, lib_sys_id, lib_id)
                     except Exception as err:
                         print(f"Failed to checkout book err: {err}")
 
                     if(checkout_res != 1):
-                        errMsg= ""
-                        if checkout_res == -1: errMsg = "No more copies available!"
-                        elif checkout_res == -2: errMsg = "This book was already checked out!"
                         flash(f"Failed to checkout book!", "is-danger")
-                        flash(errMsg, "is-danger")
+                        if checkout_res == -1:
+                            flash("No more copies available.", "is-danger")
+                        elif checkout_res == -2:
+                            flash("This book was already checked out.", "is-danger")
                         return redirect(url_for("index"))
                     
                     # TODO: have due_date be part of procedure results

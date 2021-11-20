@@ -284,12 +284,12 @@ class DB_Manager():
             print(f"Failed to get lib card num by username: {err}")
             return None
 
-    def checkout_book(self, user_id: int, book_id: int, lib_sys_id: int, lib_id: int) -> int:
+    def checkout_book(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> int:
         """Returns: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure"""
         try:
             # returns 1 on success
             self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
-                                (user_id, book_id, lib_sys_id, lib_id))
+                                (user_id, book_title, lib_sys_id, lib_id))
             # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
             # print(self.cursor._last_executed)
             res = self.cursor.fetchone()

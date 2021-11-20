@@ -175,7 +175,7 @@ CREATE TABLE holds
  book_id INT NOT NULL,
  -- ID of user who placed hold
  user_id INT NOT NULL,
- hold_start_date DATE NOT NULL,
+ hold_start_date DATETIME NOT NULL,
  
  -- The book on hold
  CONSTRAINT FK_hold_book
@@ -215,7 +215,7 @@ CREATE TABLE checked_out_books
  -- what book is checked out?
  book_id INT NOT NULL,
  -- date book is checked out
- checkout_date DATE NOT NULL,
+ checkout_date DATETIME NOT NULL,
  
  -- The due date is found by adding the checkout length from book to checkout_date
  
@@ -240,8 +240,8 @@ CREATE TABLE user_hist
  book_borrowed INT NOT NULL,
   -- what library is the book checked out from?
  library_id INT NOT NULL,
- date_borrowed DATE NOT NULL,
- date_returned DATE DEFAULT NULL,
+ date_borrowed DATETIME NOT NULL,
+ date_returned DATETIME DEFAULT NULL,
 
  
  CONSTRAINT FK_hist_user
@@ -351,6 +351,60 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS is_book_checked_out;
+DELIMITER $$
+CREATE FUNCTION is_book_checked_out(book_id_p INT)
+ RETURNS BOOLEAN
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- must be > 0 copies available (and book_id cant be already checked out)
+  DECLARE book_already_out BOOLEAN;
+  SET book_already_out = (
+    SELECT COUNT(*) > 0
+    FROM checked_out_books
+    WHERE book_id = book_id_p
+    GROUP BY book_id
+  );
+  RETURN(book_already_out);
+END $$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS is_book_avail;
+DELIMITER $$
+CREATE FUNCTION is_book_avail(book_title_p VARCHAR(200), lib_sys_id_p INT, lib_id_p INT)
+ RETURNS INT
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- returns a book_id of a copy of the book
+  -- titled 'book_title_p' in the library system
+  -- -1 if no book exists
+  DECLARE book_copy_avail INT;
+  SET book_copy_avail = (
+    WITH avail_book_in_sys as (
+      SELECT reduced_book.*
+      -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
+      FROM (SELECT * FROM book WHERE book.title = book_title_p) reduced_book
+      JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
+      JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
+      JOIN library on library.library_id = bookcase.library_id
+      JOIN library_system on library_system.library_sys_id = library.library_system
+      WHERE 
+        library_system.library_sys_id = lib_sys_id_p AND 
+        library.library_id = lib_id_p AND
+        reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
+      LIMIT 1
+    )
+    SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.book_id ELSE -1 END)
+    FROM avail_book_in_sys
+  );
+
+  RETURN(book_copy_avail);
+END $$
+DELIMITER ;
+
+
 
 DELIMITER $$
 CREATE PROCEDURE search_lib_sys_catalog(IN lib_sys_id_p INT)
@@ -391,38 +445,58 @@ DELIMITER ;
 -- Adds the book to the "checked out book" table, 
 -- returns the due date
 -- Adds book to the user's history
+DROP PROCEDURE IF EXISTS checkout_book;
 DELIMITER $$
-CREATE PROCEDURE check_out(IN book_id_p INT, IN user_id_p INT)
-BEGIN
- DECLARE checkout_length_days INT;
- DECLARE library_book_ID INT;
- 
- 
+CREATE PROCEDURE checkout_book(
+  IN user_id_p INT,
+  IN book_title VARCHAR(200),
+  IN lib_sys_id_p INT,
+  IN lib_id_p INT
+) checkout_label:BEGIN
+  -- given user_id, book_title, lib_sys_id, & lib_id -> checkout book
+  -- RETURN: (1, due_datetime) = success, -1 = no copies avail, else = failure
+  -- modify checked_out_books & user_hist tables
+  DECLARE checkout_length_days INT;
+  DECLARE checkout_datetime DATETIME;
+  DECLARE due_datetime DATETIME;
+  DECLARE avail_book_id INT;
+
+  -- use transaction bc multiple inserts and should rollback on error
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    SHOW ERRORS;
+    ROLLBACK;
+    SELECT 0;
+  END;
+
+  -- function return -1 if no coopies of the book can be checked out
+  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p);
+  IF avail_book_id = -1 THEN
+    SELECT -1;
+    LEAVE checkout_label;
+  END IF;
+
  SET checkout_length_days = 
    (SELECT checkout_length_days FROM book 
-    WHERE book_id = book_id_p);
-  
-  -- Adds the book to the check_out_books table
-   INSERT INTO checked_out_books
-   VALUES (user_id_p, book_id_p, now());
-   
-   -- The due date of the book is:
-   SELECT DATE(CURDATE() + checkout_length_days) AS "The book is due: ";
- 
- SET library_book_ID = (
-    SELECT library_id FROM library
-    WHERE library.library_id IN 
-    (SELECT bookcase_id FROM bookshelf
-     WHERE (bookshelf.booksheld_id IN (SELECT * FROM book WHERE book_id = book_id_p))));
- 
-   -- Adding the checkout into the user_hist table
-   INSERT INTO user_hist
-   VALUES (DEFAULT, user_id_p, book_id_p, library_book_ID, 
-        now(), DEFAULT);
-END $$
--- resets the DELIMETER
-DELIMITER ;
+    WHERE book_id = avail_book_id);
 
+  SET checkout_datetime = NOW();
+  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL 18 DAY));
+--  SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY) INTO due_datetime;
+
+  -- Adds the book to the check_out_books table
+  START TRANSACTION; -- may need to rollback bc multiple inserts
+  INSERT INTO checked_out_books (user_id,   book_id,       checkout_date)
+  VALUES                        (user_id_p, avail_book_id, checkout_datetime);
+
+  -- Adding the checkout into the user_hist table
+  INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
+  VALUES                (DEFAULT, user_id_p, avail_book_id, lib_id_p,   checkout_datetime);
+
+  SELECT 1 as "rtn_code", due_datetime as "due_date"; -- success return code
+  COMMIT;
+END $$
+DELIMITER ;
 
 -- Procedure to place a hold for a book
 -- will put a hold on the copy of the book that has been checked out the longest
@@ -432,15 +506,19 @@ BEGIN
 -- get the copy of book in checked_out_books that has been out the longest
 -- make a hold with that book and user date
 
-INSERT INTO holds
-    VALUES (DEFAULT, 
-        -- the book_id of the book that has been checked out the longest
-            (SELECT book_id FROM checked_out_books 
-             WHERE (title_p = title)
-             ORDER BY checkout_date ASC 
-             LIMIT 1)
-            , user_id_p,
-            now());
+-- the book_id of the book that has been checked out the longest
+DECLARE longest_loaned_book_id INT;
+SET longest_loaned_book_id = (
+  SELECT book_id
+  FROM checked_out_books 
+  WHERE (title_p = title)
+  ORDER BY checkout_date ASC 
+  LIMIT 1
+);
+
+INSERT INTO holds (hold_id, book_id, user_id, hold_start_date)
+VALUES (DEFAULT, longest_loaned_book_id, user_id_p, NOW());
+
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -1047,99 +1125,6 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
-DROP FUNCTION IF EXISTS is_book_checked_out;
-DELIMITER $$
-CREATE FUNCTION is_book_checked_out(book_id_p INT)
- RETURNS BOOLEAN
- DETERMINISTIC
- READS SQL DATA
-BEGIN
-  -- must be > 0 copies available (and book_id cant be already checked out)
-  DECLARE book_already_out BOOLEAN;
-  SET book_already_out = (
-    SELECT COUNT(*) > 0
-    FROM checked_out_books
-    WHERE book_id = book_id_p
-    GROUP BY book_id
-  );
-  RETURN(book_already_out);
-END $$
-DELIMITER ;
-
-DROP FUNCTION IF EXISTS is_book_avail_in_sys;
-DELIMITER $$
-CREATE FUNCTION is_book_avail_in_sys(book_id_p INT, lib_sys_id_p INT)
- RETURNS BOOLEAN
- DETERMINISTIC
- READS SQL DATA
-BEGIN
-  -- returns true if there is a copy a book with the same title
-  -- as book with 'book_id_p' in the library system
-  DECLARE book_copies_avail BOOLEAN;
-  SET book_copies_avail = (
-    SELECT COUNT(*) > 0 -- count of books with same title in lib sys
-    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
-    FROM (SELECT * FROM book WHERE book.title = (SELECT title FROM book WHERE book_id = book_id_p)) reduced_book
-    JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
-    JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
-    JOIN library on library.library_system = bookcase.library_id
-    JOIN library_system on library_system.library_sys_id = library.library_system
-    WHERE library_system.library_sys_id = lib_sys_id_p AND reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
-  );
-  RETURN(book_copies_avail);
-END $$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS checkout_book;
-DELIMITER $$
-CREATE PROCEDURE checkout_book(
-  IN user_id_p INT,
-  IN book_id_p INT,
-  IN lib_sys_id_p INT,
-  IN lib_id_p INT
-) checkout_label:BEGIN
-  -- given user_id, book_id, lib_sys_id, & lib_id -> checkout book
-  -- RETURN: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
-  -- modify checked_out_books & user_hist tables
-  DECLARE checkout_datetime DATE;
-  -- use transaction bc multiple inserts and should rollback on error
-  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
-  BEGIN
-    ROLLBACK;
-    SELECT 0;
-  END;
-
-  IF is_book_checked_out(book_id_p) THEN
-    SELECT -2;
-    LEAVE checkout_label;
-  END IF;
-
-  IF NOT is_book_avail_in_sys(book_id_p, lib_sys_id_p) THEN
-    SELECT -1;
-    LEAVE checkout_label;
-  END IF;
-
-  -- add book as "checked out"
-  START TRANSACTION;
-  SET checkout_datetime = NOW();
-  INSERT INTO checked_out_books (user_id,   book_id,   checkout_date)
-  VALUES                        (user_id_p, book_id_p, checkout_datetime);
-
-  -- add book to user_hist
-  INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
-  VALUES                (DEFAULT, user_id_p, book_id_p,     lib_id_p,   checkout_datetime);
-
-  SELECT 1; -- success return code
-  COMMIT;
-END $$
--- resets the DELIMETER
-DELIMITER ;
-
--- CALL checkout_book(1, 2, 1, 1); -- should fail bc repeated book_id (returns -2)
--- CALL checkout_book(1, 3, 1, 1); -- get the second moby dick book in Metro Boston Library Network
--- CALL checkout_book(1, 4, 1, 1); -- should fail bc no more copies ot title available (returns -1)
-
-
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####
@@ -1287,10 +1272,9 @@ CALL add_new_book("Death of a Salesman", 4,
     9780140481341, "Arthur Miller", "Penguin Plays", false, 
     139, 21, 812.52, .06);
 
--- have test user (nickrizzo) checkout one copy of Moby Dick (1/2 available)
--- user_id = 1, book_id = 2(moby dick #1), lib_sys_id = 1(Metro Boston Library Network), lib_id = 1 (match insert above = Charlestown)
+-- have test user checkout one copy of Moby Dick (2 available)
+-- user_id = 1, book_title = moby dick, lib_sys_id = 1(Metro Boston Library Network), lib_id = 1 (match insert above = Charlestown)
 -- test search with user: nickrizzo -> moby dick
-CALL checkout_book(1, 2, 1, 1);
--- CALL checkout_book(1, 3, 1, 1); -- get the second moby dick book in Metro Boston Library Network
--- CALL checkout_book(1, 3, 1, 1); -- should fail bc no more copies ot title available (returns -1)
--- CALL checkout_book(1, 2, 1, 1); -- should fail bc repeated book_id (returns -2)
+-- in web app, try checking out second copy of "moby dick" at this library
+CALL checkout_book(1, "Moby Dick", 1, 1); -- will work twice (but then no more copies available)
+CALL checkout_book(1, "Moby Dick", 1, 2); -- get last copy of moby dick in system (but diff lib)
