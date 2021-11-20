@@ -300,6 +300,7 @@ DELIMITER ;
 --
 
 -- Lists the library branch where each available copy of a book is located
+DROP PROCEDURE IF EXISTS search_for_book;
 DELIMITER $$
 CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50), IN lib_sys_id_p INT)
 BEGIN
@@ -307,49 +308,73 @@ BEGIN
  WITH
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
-   SELECT book.book_id, library.library_name, library.library_id, bookcase.bookcase_local_num, bookshelf.bookshelf_local_num,
-    bookcase.bookcase_id, bookshelf.bookshelf_id, COUNT(*) AS num_copies_at_library
-   FROM book
-   JOIN bookshelf ON book.bookshelf_id = bookshelf.bookshelf_id
-   JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
-   JOIN library ON bookcase.library_id = library.library_id
-   WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
-   GROUP BY library.library_id),
-
-  -- Get the Copies that are checked out at a given library
-  num_copies_taken AS(
-    SELECT all_copies.book_id, all_copies.library_id, COUNT(checked_out_books.book_id) AS num_checked_out
+    SELECT
+      relevent_books.book_id,
+      library.library_name,
+      library.library_id,
+      bookcase.bookcase_local_num,
+      bookshelf.bookshelf_local_num,
+      bookcase.bookcase_id,
+      bookshelf.bookshelf_id
+    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
+    FROM (SELECT * FROM book WHERE book.title = booktitle_p) relevent_books
+    JOIN bookshelf ON relevent_books.bookshelf_id = bookshelf.bookshelf_id
+    JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
+    JOIN library ON bookcase.library_id = library.library_id
+    WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
+  ),
+  num_copies_available AS(
+    SELECT
+      library_id,
+      num_copies_in_stock
+    FROM (
+      -- get actual data
+      SELECT all_copies.library_id, count(checked_out_books.book_id) as num_copies_in_stock
+      FROM all_copies
+      LEFT JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
+      WHERE checked_out_books.book_id IS NULL
+      GROUP BY all_copies.library_id
+    ) X
+    -- make sure to incorporate all library_id's with 0's
+    UNION
+    SELECT all_copies.library_id, 0 AS num_copies_in_stock
     FROM all_copies
-    LEFT OUTER JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
+  ),
+  num_copies_exist AS(
+    SELECT all_copies.library_id, count(*) as tot_num_copies
+    FROM all_copies
     GROUP BY all_copies.library_id
   ),
-  
-  -- Get the number of holds 
-  num_copies_available AS(
-    SELECT all_copies.*, num_copies_taken.num_checked_out,
-        (all_copies.num_copies_at_library - num_copies_taken.num_checked_out) AS num_copies_in_stock
-    FROM all_copies
-    LEFT OUTER JOIN num_copies_taken 
-    ON all_copies.book_id = num_copies_taken.book_id
-  ),
-  
   -- Find how many holds there are for the book at each library
   num_holds AS(
-    SELECT num_copies_available.*, COUNT(holds.book_id) AS number_holds
-        FROM num_copies_available
-        LEFT OUTER JOIN holds
-        ON num_copies_available.book_id = holds.book_id
-        GROUP BY num_copies_available.book_id
+    SELECT
+      all_copies.library_id,
+      COUNT(holds.book_id) AS number_holds
+    FROM all_copies
+    LEFT OUTER JOIN holds ON all_copies.book_id = holds.book_id
+    GROUP BY all_copies.library_id
+  ),
+  combined_table AS (
+    SELECT
+      all_copies.library_id,
+      all_copies.library_name,
+      num_copies_exist.tot_num_copies,
+      (num_copies_exist.tot_num_copies - num_copies_available.num_copies_in_stock) as num_checked_out,
+      num_copies_available.num_copies_in_stock,
+      num_holds.number_holds
+    FROM all_copies
+    LEFT OUTER JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
+    LEFT OUTER JOIN num_holds ON num_holds.library_id = all_copies.library_id
+    LEFT OUTER JOIN num_copies_available ON all_copies.library_id = num_copies_available.library_id
+    GROUP BY all_copies.library_id
   )
   
-  SELECT book_id, library_name, library_id, bookcase_local_num, bookshelf_local_num,
-    bookcase_id, bookshelf_id, num_copies_at_library, num_checked_out, num_copies_in_stock, number_holds
-    FROM num_holds;
-
- 
+--  SELECT * from all_copies;
+ SELECT * FROM combined_table; 
+-- SELECT * FROM num_copies_available; 
 END $$
--- resets the DELIMETER
 DELIMITER ;
+
 
 DROP FUNCTION IF EXISTS is_book_checked_out;
 DELIMITER $$
@@ -389,7 +414,6 @@ BEGIN
       JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
       JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
       JOIN library on library.library_id = bookcase.library_id
-      JOIN library_system on library_system.library_sys_id = library.library_system
       WHERE 
         library_system.library_sys_id = lib_sys_id_p AND 
         library.library_id = lib_id_p AND
@@ -493,7 +517,8 @@ CREATE PROCEDURE checkout_book(
   INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
   VALUES                (DEFAULT, user_id_p, avail_book_id, lib_id_p,   checkout_datetime);
 
-  SELECT 1 as "rtn_code", due_datetime as "due_date"; -- success return code
+  -- TODO: in checkout return this info: bookcase_local_num & bookshelf_local_num
+  SELECT 1 as "rtn_code", due_datetime as "due_date";
   COMMIT;
 END $$
 DELIMITER ;
