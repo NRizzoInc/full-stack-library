@@ -178,8 +178,6 @@ class WebApp(UserManager):
                     flash(errMsg, "is-danger")
                     return redirect(url_for("index"))
                 
-                # TODO: call procedure to verify user is part of the library system the book belongs to
-                # TODO: call checkout procedure and return to home
                 # TODO: have due_date be part of procedure results
                 # TODO: have success_status include if they're on hold or not + details
                 return redirect(url_for(
