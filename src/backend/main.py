@@ -164,28 +164,31 @@ class WebApp(UserManager):
                     # try to go back, else returns to index
                     return redirect(url_for("index"))
                 
-                # checkout book w/ error check
-                try:
-                    checkout_res = self.checkout_book(user_id, book_id, lib_sys_id, lib_id)
-                except Exception as err:
-                    print(f"Failed to checkout book err: {err}")
+                if not is_hold:
+                    # checkout book w/ error check
+                    try:
+                        checkout_res = self.checkout_book(user_id, book_id, lib_sys_id, lib_id)
+                    except Exception as err:
+                        print(f"Failed to checkout book err: {err}")
 
-                if(checkout_res != 1):
-                    errMsg= ""
-                    if checkout_res == -1: errMsg = "No more copies available!"
-                    elif checkout_res == -2: errMsg = "This book was already checked out!"
-                    flash(f"Failed to checkout book!", "is-danger")
-                    flash(errMsg, "is-danger")
-                    return redirect(url_for("index"))
-                
-                # TODO: have due_date be part of procedure results
-                # TODO: have success_status include if they're on hold or not + details
-                return redirect(url_for(
-                    "checkoutResult",
-                    success_status="Success",
-                    book_title=book_title,
-                    due_date="Sept 20, 2022"
-                ))
+                    if(checkout_res != 1):
+                        errMsg= ""
+                        if checkout_res == -1: errMsg = "No more copies available!"
+                        elif checkout_res == -2: errMsg = "This book was already checked out!"
+                        flash(f"Failed to checkout book!", "is-danger")
+                        flash(errMsg, "is-danger")
+                        return redirect(url_for("index"))
+                    
+                    # TODO: have due_date be part of procedure results
+                    # TODO: have success_status include if they're on hold or not + details
+                    return redirect(url_for(
+                        "checkoutResult",
+                        success_status="Success",
+                        book_title=book_title,
+                        due_date="Sept 20, 2022"
+                    ))
+                else: # is hold
+                    pass
 
         @self._app.route('/checkoutResult', methods=['GET'])
         @login_required
