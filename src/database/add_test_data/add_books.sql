@@ -37,3 +37,6 @@ CALL add_new_book("Moby Dick", 4, '9780425120231', 'Herman Melville', 'Berkley P
 -- TEST
 -- call available_hold_count("Moby Dick");
 call search_for_book("Moby Dick");
+
+CALL get_all_books_from_sys(1);
+CALL get_lib_sys_name_from_user_id(1);

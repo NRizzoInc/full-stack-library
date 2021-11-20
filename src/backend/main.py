@@ -23,6 +23,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 #--------------------------------Project Includes--------------------------------#
 from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
+from catalogResultTable import CatalogResultTable, create_catalog_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
@@ -96,7 +97,7 @@ class WebApp(UserManager):
             form = BookSearchForm(request.form)
             url = "/"
             # Get the library system of the user to search for
-            lib_sys_id = self.get_users_lib_sys_id(current_user.id)
+            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
             search_res = []
             if lib_sys_id is not None:
                 raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
@@ -107,6 +108,21 @@ class WebApp(UserManager):
 
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)
+
+        @self._app.route("/get_lib_sys_catalog", methods=["GET"])
+        @login_required
+        def get_lib_sys_catalog():
+            lib_sys_name = self.get_lib_sys_name_from_user_id(current_user.id)
+            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
+            catalog_dict = self.search_lib_sys_catalog(lib_sys_id)
+
+            catalog_cells = []
+            if catalog_dict is not None:
+                catalog_cells = create_catalog_cells(catalog_dict)
+
+            # If the list is empty, "No Items" is displayed
+            catalog_table = CatalogResultTable(catalog_cells)
+            return render_template("catalogResult.html", lib_sys_name=lib_sys_name, catalog_table=catalog_table)
 
     def createInfoRoutes(self):
         """All routes for internal passing of information"""

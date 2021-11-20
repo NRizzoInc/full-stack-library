@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+<body>
+
+    {% block content %}
+    Catalog Results for <b>{{ lib_sys_name }}</b> Library System:
+    <br>
+        {{ catalog_table }}
+    <br>
+    For more information about the books availability, please use our Search Feature:
+    <br>
+
+        <div class="buttons is-centered">
+            <a href="{{ url_for('index') }}" class="button is-link">
+                Return to Search Menu
+            </a>
+        </div>
+    {% endblock %}
+</body>

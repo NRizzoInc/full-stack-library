@@ -4,7 +4,7 @@
 import os, sys
 import argparse # cli paths
 import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import pymysql
@@ -218,6 +218,14 @@ class DB_Manager():
         except:
             return ""
 
+    def get_lib_sys_name_from_user_id(self, user_id: int) -> str:
+        try:
+            self.cursor.execute("select get_lib_sys_name_from_user_id(%s)", (user_id))
+            sys_name = list(self.cursor.fetchone().values())[0]
+            return str(sys_name)
+        except:
+            return ""
+
     def get_lib_name_from_id(self, sys_id: int) -> str:
         try:
             self.cursor.execute("select get_lib_name_from_id(%s)", (sys_id))
@@ -226,7 +234,7 @@ class DB_Manager():
         except:
             return ""
 
-    def search_for_book(self, book_name: str, lib_sys_id: int):
+    def search_for_book(self, book_name: str, lib_sys_id: int) -> Optional[List[Dict]]:
         """Search for all copies of the book within the library system.
         Limit the results to within the library system because a user can ONLY checkout
         a book if they belong to a library within the system"""
@@ -238,7 +246,17 @@ class DB_Manager():
         except:
             return None
 
-    def get_users_lib_sys_id(self, user_id) -> Optional[int]:
+    def search_lib_sys_catalog(self, lib_sys_id: int) -> Optional[List[Dict]]:
+        """Search for ALL books that are in libraries in the Library System"""
+        try:
+            self.cursor.execute("call search_lib_sys_catalog(%s)", (lib_sys_id))
+            # Result is a list of dictionaries where the key's are repeated
+            catalog_search_res = self.cursor.fetchall()
+            return catalog_search_res
+        except:
+            return None
+
+    def get_sys_id_from_user_id(self, user_id) -> Optional[int]:
         """Given a user's id, returns the id of the library system"""
         try:
             self.cursor.execute("select get_lib_sys_id_from_user_id(%s)", (user_id))

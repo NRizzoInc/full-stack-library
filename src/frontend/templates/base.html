@@ -40,6 +40,15 @@
                                 Home
                             </a>
                         </div>
+                        {% if current_user.is_authenticated %}
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('get_lib_sys_catalog') }}" class="button is-primary">
+                                    Book Catalog
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
                         <!-- <div class="navbar-item has-dropdown is-hoverable"> -->
