@@ -299,6 +299,8 @@ DELIMITER ;
 -- PROCEDURES
 --
 
+-- CALL search_for_book("Moby Dick", 1);
+
 -- Lists the library branch where each available copy of a book is located
 DROP PROCEDURE IF EXISTS search_for_book;
 DELIMITER $$
@@ -326,22 +328,27 @@ BEGIN
   num_copies_available AS(
     SELECT
       library_id,
-      num_copies_in_stock
+      MAX(num_copies) as num_copies_in_stock
     FROM (
-      -- get actual data
-      SELECT all_copies.library_id, count(checked_out_books.book_id) as num_copies_in_stock
+      SELECT library_id, num_copies
+      FROM (
+        -- get actual data
+        SELECT all_copies.library_id as library_id, count(checked_out_books.book_id) as num_copies
+        FROM all_copies
+        LEFT JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
+        WHERE checked_out_books.book_id IS NULL
+        GROUP BY all_copies.library_id
+      ) X
+      -- make sure to incorporate all library_id's with actual # of copies
+      UNION ALL
+      SELECT all_copies.library_id as library_id, COUNT(all_copies.book_id) AS num_copies
       FROM all_copies
-      LEFT JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
-      WHERE checked_out_books.book_id IS NULL
-      GROUP BY all_copies.library_id
+      GROUP BY library_id
     ) X
-    -- make sure to incorporate all library_id's with 0's
-    UNION
-    SELECT all_copies.library_id, 0 AS num_copies_in_stock
-    FROM all_copies
+    GROUP BY library_id
   ),
   num_copies_exist AS(
-    SELECT all_copies.library_id, count(*) as tot_num_copies
+    SELECT all_copies.library_id, count(*) as num_copies_at_library
     FROM all_copies
     GROUP BY all_copies.library_id
   ),
@@ -358,8 +365,8 @@ BEGIN
     SELECT
       all_copies.library_id,
       all_copies.library_name,
-      num_copies_exist.tot_num_copies,
-      (num_copies_exist.tot_num_copies - num_copies_available.num_copies_in_stock) as num_checked_out,
+      num_copies_exist.num_copies_at_library,
+      (num_copies_exist.num_copies_at_library - num_copies_available.num_copies_in_stock) as num_checked_out,
       num_copies_available.num_copies_in_stock,
       num_holds.number_holds
     FROM all_copies
@@ -415,7 +422,7 @@ BEGIN
       JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
       JOIN library on library.library_id = bookcase.library_id
       WHERE 
-        library_system.library_sys_id = lib_sys_id_p AND 
+        library.library_system = lib_sys_id_p AND 
         library.library_id = lib_id_p AND
         reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
       LIMIT 1

@@ -10,8 +10,8 @@ class BookSearchTable(Table):
     num_avail = Col('Number of Copies Available')
     num_checked_out = Col('Number of Copies Checked Out')
     num_holds = Col('Number of Holds')
-    case_num = Col('Bookcase # in Library')
-    shelf_num = Col('Bookshelf # in Library')
+    # case_num = Col('Bookcase # in Library')
+    # shelf_num = Col('Bookshelf # in Library')
     checkout = ButtonCol(
         name='Perform Checkout/Place Hold',
         endpoint="checkout",
@@ -27,18 +27,23 @@ class BookSearchTable(Table):
 
 class BookSearchCell(object):
     def __init__(self,
-                lib_name, total_num_at_lib, num_avail, num_checked_out,
-                num_holds, case_num, shelf_num,
-                # Used for checkout url
-                book_title):
+        lib_name,
+        total_num_at_lib,
+        num_avail,
+        num_checked_out,
+        num_holds,
+        # case_num, shelf_num,
+        # Used for checkout url
+        book_title
+    ):
 
         self.lib_name = lib_name
         self.total_num_at_lib = total_num_at_lib
         self.num_checked_out = num_checked_out
         self.num_holds = num_holds
         self.num_avail = num_avail
-        self.case_num = case_num
-        self.shelf_num = shelf_num
+        # self.case_num = case_num
+        # self.shelf_num = shelf_num
 
         # Used for checkout url
         # self.book_id = book_id
@@ -60,9 +65,12 @@ def create_search_cells(raw_res_list : List[Dict], book_title : str) -> List[Boo
         # Will ad-hoc generate a table on the webpage with all the results
         for result in raw_res_list:
             search_res.append(
-                BookSearchCell(result['library_name'], result['num_copies_at_library'],
+                BookSearchCell(
+                    result['library_name'], result['num_copies_at_library'],
                     result['num_copies_in_stock'], result['num_checked_out'],
-                    result['number_holds'], result['bookcase_local_num'],
-                    result['bookshelf_local_num'], book_title)
+                    result['number_holds'],
+                    # result['bookcase_local_num'], result['bookshelf_local_num'],
+                    book_title
+                )
             )
     return search_res
