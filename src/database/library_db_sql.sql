@@ -1066,6 +1066,30 @@ BEGIN
 END $$
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS is_book_avail_in_sys;
+DELIMITER $$
+CREATE FUNCTION is_book_avail_in_sys(book_id_p INT, lib_sys_id_p INT)
+ RETURNS BOOLEAN
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- returns true if there is a copy a book with the same title
+  -- as book with 'book_id_p' in the library system
+  DECLARE book_copies_avail BOOLEAN;
+  SET book_copies_avail = (
+    SELECT COUNT(*) > 0 -- count of books with same title in lib sys
+    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
+    FROM (SELECT * FROM book WHERE book.title = (SELECT title FROM book WHERE book_id = book_id_p)) reduced_book
+    JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
+    JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
+    JOIN library on library.library_system = bookcase.library_id
+    JOIN library_system on library_system.library_sys_id = library.library_system
+    WHERE library_system.library_sys_id = lib_sys_id_p AND reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
+  );
+  RETURN(book_copies_avail);
+END $$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS checkout_book;
 DELIMITER $$
 CREATE PROCEDURE checkout_book(
@@ -1077,7 +1101,6 @@ CREATE PROCEDURE checkout_book(
   -- given user_id, book_id, lib_sys_id, & lib_id -> checkout book
   -- RETURN: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
   -- modify checked_out_books & user_hist tables
-  DECLARE book_copies_avail BOOL;
   DECLARE checkout_datetime DATE;
   -- use transaction bc multiple inserts and should rollback on error
   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
@@ -1091,17 +1114,7 @@ CREATE PROCEDURE checkout_book(
     LEAVE checkout_label;
   END IF;
 
-  SET book_copies_avail = (
-    SELECT COUNT(*) > 0 -- count of books with same title in lib sys
-    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
-    FROM (SELECT * FROM book WHERE book.title = (SELECT title FROM book WHERE book_id = book_id_p)) reduced_book
-    JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
-    JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
-    JOIN library on library.library_system = bookcase.library_id
-    JOIN library_system on library_system.library_sys_id = library.library_system
-    WHERE library_system.library_sys_id = lib_sys_id_p AND reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
-  );
-  IF NOT book_copies_avail THEN
+  IF NOT is_book_avail_in_sys(book_id_p, lib_sys_id_p) THEN
     SELECT -1;
     LEAVE checkout_label;
   END IF;
