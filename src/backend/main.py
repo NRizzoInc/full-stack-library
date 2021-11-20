@@ -165,8 +165,17 @@ class WebApp(UserManager):
                     return redirect(url_for("index"))
                 
                 # checkout book w/ error check
-                if(not self.checkout_book(user_id, book_id, lib_sys_id, lib_id)):
-                    flash("Failed to checkout book!", "is-danger")
+                try:
+                    checkout_res = self.checkout_book(user_id, book_id, lib_sys_id, lib_id)
+                except Exception as err:
+                    print(f"Failed to checkout book err: {err}")
+
+                if(checkout_res != 1):
+                    errMsg= ""
+                    if checkout_res == -1: errMsg = "No more copies available!"
+                    elif checkout_res == -2: errMsg = "This book was already checked out!"
+                    flash(f"Failed to checkout book!", "is-danger")
+                    flash(errMsg, "is-danger")
                     return redirect(url_for("index"))
                 
                 # TODO: call procedure to verify user is part of the library system the book belongs to

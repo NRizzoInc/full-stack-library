@@ -1054,21 +1054,51 @@ CREATE PROCEDURE checkout_book(
   IN book_id_p INT,
   IN lib_sys_id_p INT,
   IN lib_id_p INT
-) BEGIN
+) checkout_label:BEGIN
   -- given user_id, book_id, lib_sys_id, & lib_id -> checkout book
+  -- RETURN: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
   -- modify checked_out_books & user_hist tables
-
-  -- use transaction bc multiple inserts and should rollback on error
+  DECLARE book_already_out BOOL;
+  DECLARE book_copies_avail BOOL;
   DECLARE checkout_datetime DATE;
+  -- use transaction bc multiple inserts and should rollback on error
   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
   BEGIN
-      ROLLBACK;
+    ROLLBACK;
+    SELECT 0;
   END;
-  START TRANSACTION;
 
-  SET checkout_datetime = NOW();
+  
+  -- must be > 0 copies available (and book_id cant be already checked out)
+  SET book_already_out = (
+    SELECT COUNT(*) > 0
+    FROM checked_out_books
+    WHERE book_id = book_id_p
+    GROUP BY book_id
+  );
+  IF book_already_out THEN
+    SELECT -2;
+    LEAVE checkout_label;
+  END IF;
+
+  SET book_copies_avail = (
+    SELECT COUNT(*) > 0 -- count of books with same title in lib sys
+    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
+    FROM (SELECT * FROM book WHERE book.title = (SELECT title FROM book WHERE book_id = book_id_p)) reduced_book
+    JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
+    JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
+    JOIN library on library.library_system = bookcase.library_id
+    JOIN library_system on library_system.library_sys_id = library.library_system
+    WHERE library_system.library_sys_id = lib_sys_id_p AND reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
+  );
+  IF NOT book_copies_avail THEN
+    SELECT -1;
+    LEAVE checkout_label;
+  END IF;
 
   -- add book as "checked out"
+  START TRANSACTION;
+  SET checkout_datetime = NOW();
   INSERT INTO checked_out_books (user_id,   book_id,   checkout_date)
   VALUES                        (user_id_p, book_id_p, checkout_datetime);
 
@@ -1076,10 +1106,15 @@ CREATE PROCEDURE checkout_book(
   INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
   VALUES                (DEFAULT, user_id_p, book_id_p,     lib_id_p,   checkout_datetime);
 
+  SELECT 1; -- success return code
   COMMIT;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
+
+-- CALL checkout_book(1, 2, 1, 1); -- should fail bc repeated book_id (returns -2)
+-- CALL checkout_book(1, 3, 1, 1); -- get the second moby dick book in Metro Boston Library Network
+-- CALL checkout_book(1, 4, 1, 1); -- should fail bc no more copies ot title available (returns -1)
 
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
@@ -1233,3 +1268,6 @@ CALL add_new_book("Death of a Salesman", 4,
 -- user_id = 1, book_id = 2(moby dick #1), lib_sys_id = 1(Metro Boston Library Network), lib_id = 1 (match insert above = Charlestown)
 -- test search with user: nickrizzo -> moby dick
 CALL checkout_book(1, 2, 1, 1);
+-- CALL checkout_book(1, 3, 1, 1); -- get the second moby dick book in Metro Boston Library Network
+-- CALL checkout_book(1, 3, 1, 1); -- should fail bc no more copies ot title available (returns -1)
+-- CALL checkout_book(1, 2, 1, 1); -- should fail bc repeated book_id (returns -2)
