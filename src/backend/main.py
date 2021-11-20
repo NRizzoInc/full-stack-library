@@ -202,7 +202,6 @@ class WebApp(UserManager):
 
             # Start by showing All libraries. Eventually this is reduced.
             libraries_dict = self.get_all_libraries()
-            print(libraries_dict)
             # Convert lib_id:lib_name -> (lib_name, lib_name)
             libraries = list(map(lambda lib_id_name_pair:
                     (lib_id_name_pair[0], lib_id_name_pair[1]), libraries_dict.items()))

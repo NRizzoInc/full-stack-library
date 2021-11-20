@@ -108,13 +108,6 @@ class DB_Manager():
             if(self.doesUsernameExist(username)):
                 print("Username already exists")
                 return -1
-            print(fname)
-            print(lname)
-            print(library_id)
-            print(dob)
-            print(is_employee)
-            print(username)
-            print(pwd)
             res = self.cursor.execute("call insert_user(%s, %s, %s, %s, %s, %s, %s)",
                                 (fname, lname, library_id, dob, is_employee, username, pwd))
             return 1
