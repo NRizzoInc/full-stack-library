@@ -61,10 +61,13 @@ class RegistrationForm(FlaskForm):
     def validateLibName(self, form, field) -> bool:
         # Other validators ensure the library system exists
         # Make sure this library is in that system
+        # Note that the data is the id of library and lib_system
         if not self.user_manager.is_lib_in_sys(form.lib_name.data, form.lib_sys_name.data):
-            errMsg = "Library " + str(form.lib_name.data) + " is not in Library System"
-            errMsg += str(form.lib_sys_name.data) + ", please try again"
-            # flash(errMsg, "is-danger")
+            lib_name = self.user_manager.get_lib_name_from_id(form.lib_name.data)
+            lib_sys_name = self.user_manager.get_lib_sys_name_from_id(form.lib_sys_name.data)
+            errMsg = "Library " + lib_name + " is not in Library System "
+            errMsg += lib_sys_name + ", please try again"
+            # flash(errMsg)
             raise ValidationError(message=errMsg) # prints under box
         else:
             return True
@@ -72,8 +75,9 @@ class RegistrationForm(FlaskForm):
     def validateLibSystemName(self, form, field) -> bool:
         is_valid_system = self.user_manager.does_lib_system_exist(form.lib_sys_name.data)
         if not is_valid_system:
-            errMsg = "Library System '" + str(form.lib_sys_name.data) + "' does not exist, please try again"
-            # flash(errMsg, "is-danger")
+            # errMsg = "Library System '" + str(form.lib_sys_name.data) + "' does not exist, please try again"
+            errMsg = "Library System selected does not exist, please try again"
+            # flash(errMsg)
             # Because this comes before validateLibName
             raise StopValidation(message=errMsg) # prints under box
         else:

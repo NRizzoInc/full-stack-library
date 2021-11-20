@@ -824,7 +824,20 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-CREATE FUNCTION is_lib_in_sys(in_lib_name VARCHAR(100), in_lib_sys_name VARCHAR(100))
+CREATE PROCEDURE get_all_libs_in_system(IN in_lib_sys_id INT)
+BEGIN
+  
+  -- Needed for validation of register. Can't be function because multiple rows returned
+  SELECT library_id, library_name
+    FROM library 
+    WHERE library_system = in_lib_sys_id
+    ORDER BY library_name ASC;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION is_lib_in_sys(in_lib_id INT, in_lib_sys_id INT)
  RETURNS BOOL 
  DETERMINISTIC 
  READS SQL DATA
@@ -833,13 +846,11 @@ BEGIN
     -- GIVEN a library name and system, return 1 if the library is in the system
     -- If a match is found, the count is 1 and ret = 1
     SELECT COUNT(*)>0 INTO ret 
-        FROM library_system
-        INNER JOIN library
-        ON library.library_system = library_system.library_sys_id
+        FROM library
         WHERE 
-            in_lib_sys_name = library_system.library_sys_name 
+            in_lib_id = library_id 
             AND 
-            library.library_name = in_lib_name;
+            in_lib_sys_id = library_system;
     
     RETURN(ret);
 END $$
@@ -847,7 +858,7 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-CREATE FUNCTION is_a_lib_sys(in_lib_sys_name VARCHAR(100))
+CREATE FUNCTION is_a_lib_sys(in_lib_sys_id INT)
  RETURNS BOOL 
  DETERMINISTIC 
  READS SQL DATA
@@ -857,12 +868,42 @@ BEGIN
     -- If a match is found, the count is 1 and ret = 1
     SELECT COUNT(*)>0 INTO ret 
         FROM library_system
-        WHERE in_lib_sys_name = library_system.library_sys_name;
+        WHERE in_lib_sys_id = library_system.library_sys_id;
     
     RETURN(ret);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION get_lib_name_from_id(in_lib_id INT)
+ RETURNS VARCHAR(100) 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE ret VARCHAR(100) ;
+    SELECT library_name INTO ret 
+        FROM library
+        WHERE in_lib_id = library.library_id;
+    
+    RETURN(ret);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION get_lib_sys_name_from_id(in_lib_sys_id INT)
+ RETURNS VARCHAR(100) 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE ret VARCHAR(100) ;
+    SELECT library_sys_name INTO ret 
+        FROM library_system
+        WHERE in_lib_sys_id = library_system.library_sys_id;
+    
+    RETURN(ret);
+END $$
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_user_id(in_user_id INT)
@@ -903,6 +944,28 @@ BEGIN
   LIMIT 1;
   
   RETURN(lib_card_num_out);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION get_lib_sys_id_from_sys_name(in_lib_sys_name VARCHAR(100))
+ RETURNS BOOL 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE lib_sys_id BOOL;
+    -- GIVEN a user's id, returns the id of the library system 
+    SELECT library_system INTO lib_sys_id
+        FROM library
+        WHERE library_id = (
+            SELECT library_sys_id
+            FROM library_system
+            WHERE library_sys_name = in_lib_sys_name
+            LIMIT 1
+        );
+    
+    RETURN(lib_sys_id);
 END $$
 -- resets the DELIMETER
 DELIMITER ;

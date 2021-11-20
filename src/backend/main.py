@@ -12,7 +12,7 @@ import getpass
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
-from flask import Flask, templating, render_template, request, redirect, flash, url_for
+from flask import Flask, templating, render_template, request, redirect, flash, url_for, jsonify
 import werkzeug.serving # needed to make production worthy app that's secure
 
 # decorate app.route with "@login_required" to make sure user is logged in before doing anything
@@ -75,6 +75,7 @@ class WebApp(UserManager):
         self.createFormPages()
         self.createCheckoutPages()
         self.createUserPages()
+        self.createInfoRoutes()
 
         # TODO: make a route for employees to add a new book to the library
 
@@ -106,6 +107,21 @@ class WebApp(UserManager):
 
             return render_template("searchResult.html", book_title_searched=form.book_title.data,
                 url=url, result_table=search_table)
+
+    def createInfoRoutes(self):
+        """All routes for internal passing of information"""
+        @self._app.route('/register/set_avail_libs/<lib_system_id>', methods=['POST'])
+        def register_set_avail_libs(lib_system_id):
+            """Used to ad-hoc set the libraries in the registration dropdown
+                based on the library system selected in dropdown."""
+            id_name_dict = {}
+            # Edge case for reseting library system to default
+            if lib_system_id == "all_libs":
+                id_name_dict = self.get_all_libraries()
+            else:
+                # Get the libraries part of the system
+                id_name_dict = self.get_all_librarys_in_system(lib_system_id)
+            return jsonify(list(id_name_dict.items()))
 
     def createCheckoutPages(self):
         #TODO: make this a login required page (or at least have them login right now)
@@ -180,14 +196,16 @@ class WebApp(UserManager):
             if current_user.is_authenticated: return redirect("/")
             # make the form for both GET & POST (to show and parse respectively)
             lib_systems_dict = self.get_all_library_systems()
-            # Convert sys_id:sys_name -> sys_name:sys_name
-            lib_systems = list(map(lambda sys_name: (sys_name, sys_name), lib_systems_dict.values()))
+            # Convert sys_id:sys_name -> (sys_id, sys_name)
+            lib_systems = list(map(lambda sys_id_name_pair:
+                (sys_id_name_pair[0], sys_id_name_pair[1]), lib_systems_dict.items()))
 
             # Start by showing All libraries. Eventually this is reduced.
             libraries_dict = self.get_all_libraries()
             print(libraries_dict)
-            # Convert lib_id:lib_name -> lib_name:lib_name
-            libraries = list(map(lambda lib_name: (lib_name, lib_name), libraries_dict.values()))
+            # Convert lib_id:lib_name -> (lib_name, lib_name)
+            libraries = list(map(lambda lib_id_name_pair:
+                    (lib_id_name_pair[0], lib_id_name_pair[1]), libraries_dict.items()))
 
             form = RegistrationForm(self._app, user_manager=self)
 
@@ -197,14 +215,11 @@ class WebApp(UserManager):
             form.lib_name.choices = [('', '')] + libraries
 
             if request.method == "POST" and form.validate_on_submit():
-                # Get the library id
-                library_id = self.get_lib_id_from_name(form.lib_name.data, form.lib_sys_name.data)
-
                 # actually add user given info is valid/allowed
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
-                    library_id,
+                    form.lib_name.data,
                     form.dob.data,
                     form.is_employee.data,
                     form.username.data,
