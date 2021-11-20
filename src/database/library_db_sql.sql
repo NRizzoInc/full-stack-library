@@ -1047,6 +1047,25 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS is_book_checked_out;
+DELIMITER $$
+CREATE FUNCTION is_book_checked_out(book_id_p INT)
+ RETURNS BOOLEAN
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- must be > 0 copies available (and book_id cant be already checked out)
+  DECLARE book_already_out BOOLEAN;
+  SET book_already_out = (
+    SELECT COUNT(*) > 0
+    FROM checked_out_books
+    WHERE book_id = book_id_p
+    GROUP BY book_id
+  );
+  RETURN(book_already_out);
+END $$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS checkout_book;
 DELIMITER $$
 CREATE PROCEDURE checkout_book(
@@ -1058,7 +1077,6 @@ CREATE PROCEDURE checkout_book(
   -- given user_id, book_id, lib_sys_id, & lib_id -> checkout book
   -- RETURN: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
   -- modify checked_out_books & user_hist tables
-  DECLARE book_already_out BOOL;
   DECLARE book_copies_avail BOOL;
   DECLARE checkout_datetime DATE;
   -- use transaction bc multiple inserts and should rollback on error
@@ -1068,15 +1086,7 @@ CREATE PROCEDURE checkout_book(
     SELECT 0;
   END;
 
-  
-  -- must be > 0 copies available (and book_id cant be already checked out)
-  SET book_already_out = (
-    SELECT COUNT(*) > 0
-    FROM checked_out_books
-    WHERE book_id = book_id_p
-    GROUP BY book_id
-  );
-  IF book_already_out THEN
+  IF is_book_checked_out(book_id_p) THEN
     SELECT -2;
     LEAVE checkout_label;
   END IF;
