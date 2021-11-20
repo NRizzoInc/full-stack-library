@@ -995,9 +995,11 @@ DELIMITER ;
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####
+-- many systems come from here https://mblc.state.ma.us/programs-and-support/library-networks/index.php 
 INSERT INTO library_system (library_sys_name) VALUES
     ("Metro Boston Library Network"),
     ("Old Colony Library Network"),
+    -- https://www.minlib.net/our-libraries
     ("Minuteman Library Network");
 
 -- ##### ADD Library's ####
@@ -1009,15 +1011,20 @@ INSERT INTO library_system (library_sys_name) VALUES
 CALL add_library("Metro Boston Library Network", "Charlestown",
         "179 Main St Charlestown, MA 02129", '10:00', '18:00', 5);
 CALL add_library("Metro Boston Library Network", "Central Library in Copley Square",
-        "700 Boylston Street Boston, MA 02116", '10:00', '8:00', 5);
+        "700 Boylston Street Boston, MA 02116", '10:00', '20:00', 5);
 CALL add_library("Metro Boston Library Network", "Jamaica Plain",
-        "30 South Street Jamaica Plain, MA 02130", '10:00', '6:00', 5);
+        "30 South Street Jamaica Plain, MA 02130", '10:00', '18:00', 5);
 -- Reference: https://catalog.ocln.org/client/en_US/ocln/?rm=LIBRARY+LOCATI1%7C%7C%7C1%7C%7C%7C3%7C%7C%7Ctrue
 CALL add_library("Old Colony Library Network", "Plymouth Public Library",
-        "132 South Street Plymouth, MA 02360", '10:00', '9:00', 8);
+        "132 South Street Plymouth, MA 02360", '10:00', '21:00', 8);
 CALL add_library("Old Colony Library Network", "Kingston Public Library",
-        "6 Green Street Kingston, MA 02364", '10:00', '5:00', 4);
+        "6 Green Street Kingston, MA 02364", '10:00', '17:00', 4);
 
+-- https://www.minlib.net/our-libraries
+CALL add_library("Minuteman Library Network", "Cambridge Public Library",
+        "449 Broadway Cambridge, MA 02138", '10:00', '21:00', 4);
+
+        
 -- ##### ADD BOOKCASES AND BOOKSHELVES ####
 CALL add_bookcase(1, 000, 999);
 CALL add_bookshelf(1, 000, 499);
@@ -1046,38 +1053,88 @@ CALL add_bookcase(5, 0, 999);
 CALL add_bookshelf(5, 0, 599);
 CALL add_bookshelf(5, 600, 999);
 
--- ##### ADD A User & Employee ####
-CALL insert_user("employee",
-  "dummy",
-  1,
-  CURDATE(),
-  true,
-  "test_employee",
-  "fakePWD1234");
-  
-  CALL insert_user("employee2",
-  "dummy2",
-  2,
-  CURDATE(),
-  true,
-  "test_employee2",
-  "fakePWD1234");
+CALL add_bookcase(6, 0, 499);
+CALL add_bookcase(6, 500, 999);
+CALL add_bookshelf(6, 0, 99);
+CALL add_bookshelf(6, 100, 399);
+CALL add_bookshelf(6, 400, 499);
+CALL add_bookshelf(6, 500, 639);
+CALL add_bookshelf(6, 640, 999);
+
+-- ##### ADD ourselves as Employees ####
+CALL insert_user(
+  "nick", "rizzo",
+  1, -- library_id = 1 (Charlestown - needed to test checkout_book)
+  CURDATE(), true, "nickrizzo", "pwd"
+);
+
+CALL insert_user(
+  "Matt", "Rizzo",
+  4, -- library_id = 4 (Plymouth Public Library - another system)
+  CURDATE(), true, "mattrizzo", "pwd"
+);
+CALL insert_user(
+  "Domenic", "Privitera",
+  6, -- library_id = 6 (Cambridge Public Library - system 3)
+  CURDATE(), true, "dompriv", "pwd"
+);
   
 -- ##### ADD some BOOKS ####
   CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
     1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
-    false, 1442, 14, 005.74, .5);
+    false, 1442, 14, 005.74, 10);
 
 -- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 14, 812.54, .5);
+    false, 704, 10, 812.54, .3);
 -- Have 2 copies of the same book in 1 library
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 14, 812.54, .5);
+    false, 704, 21, 812.54, .3);
 CALL add_new_book("Moby Dick", 2, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 14, 812.54, .5);
+    false, 704, 9, 812.54, .3);
 
--- Also put Moby Dick in another system to test the search results - 4 is start of new system
-CALL add_new_book("Moby Dick", 4, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 14, 812.54, .5);
+-- Also put Moby Dick in another system to test the search results
+CALL add_new_book("Moby Dick", 6, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
+    false, 704, 14, 812.54, .3);
+    
+-- Add at least 1 book to every library
+CALL add_new_book("The Institute", 2, 9781432870126, "Stephen King", "Scribner", 
+    false, 576, 14, 813.54, .5);
+CALL add_new_book("How to do nothing : resisting the attention economy", 3, 9781612197500, 
+    "Jenny Odell", "Melville House", false, 256, 20, 303.48, .05);
+CALL add_new_book("Majesty", 4, 9781984830227 , "Katharine McGee", "Random House", 
+    false, 448 , 7, 813.6, .20);
+CALL add_new_book("Pride and Prejudice", 5, 9781435171589, "Jane Austen", 
+    "Barnes & Noble Signature Classics Series", false, 384, 16, 823.7, .12);
+CALL add_new_book("Little Red Riding Hood", 5, 9780316013550, "	Brothers Grimm", 
+    "Little, Brown and Company", false, 34, 8, 398.2, .10);
+CALL add_new_book("A Modern Utopia", 6, 9780486808352 , "H. G. Wells", 
+    "Chapman and Hall", false, 393, 14, 321.07, .1);
+
+-- Put at least 1 audio book in every library
+CALL add_new_book("American Republics: A Continental History of the United States, 1783-1850",
+    1, 9781324005797 , "Alan Taylor", 
+    "W. W. Norton & Company ", true, 544, 
+    12, 973.3, .15);
+CALL add_new_book("China Room", 2,  9780593298145 , "Sunjeev Sahota", 
+    "Penguin Audio", true, 243, 7, 823.92, .2);
+CALL add_new_book("The Death of the Heart", 3,  9781705286647, "Elizabeth Bowen", 
+    "Knopf", true, 445, 15, 823.912, .05);
+CALL add_new_book("Empire of Pain: The Secret History of the Sackler Dynasty", 4,
+    0385545681, "Patrick Radden Keefe", 
+    "Random House Audio", true, 535 , 14, 338.7, .03);
+CALL add_new_book("Exit", 5, 9781662065965, "Belinda Bauer", 
+    "Dreamscape Media, LLC", true, 336, 11, 823.92, .2);
+CALL add_new_book("The Man Who Died Twice: A Thursday Murder Club Mystery", 6,
+    9780841993583, "Richard Osman", "Penguin Audio", true, 365, 14, 823.92, .06);
+
+-- Just add some random books
+CALL add_new_book("Alice's Adventures in Wonderland", 3,
+    9780977716173, "Lewis Carroll", "Macmillan", false, 176, 14, 823.8, .03);
+CALL add_new_book("American Gods", 3,
+    9783962190019, "Neil Gaiman", "William Morrow, Headline", false, 
+    465, 14, 813.54, .09);
+CALL add_new_book("Death of a Salesman", 4,
+    9780140481341, "Arthur Miller", "Penguin Plays", false, 
+    139, 21, 812.52, .06);
