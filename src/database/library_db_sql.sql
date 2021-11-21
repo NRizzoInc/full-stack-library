@@ -333,6 +333,7 @@ BEGIN
   num_copies_available AS(
     SELECT
       all_copies.library_id,
+      COUNT(checked_out_books.book_id) as num_checked_out,
       (num_copies_exist.num_copies_at_library - COUNT(checked_out_books.book_id)) as num_copies_in_stock
     FROM all_copies
     LEFT JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
@@ -353,7 +354,7 @@ BEGIN
       all_copies.library_id,
       all_copies.library_name,
       num_copies_exist.num_copies_at_library,
-      (num_copies_exist.num_copies_at_library - num_copies_available.num_copies_in_stock) as num_checked_out,
+      num_copies_available.num_checked_out,
       num_copies_available.num_copies_in_stock,
       num_holds.number_holds
     FROM all_copies
