@@ -379,7 +379,7 @@ BEGIN
         GROUP BY lib_book_shelves.library_name, book.title
     )
     
-    SELECT library_name, book_title, author, num_copies_at_library
+    SELECT library_name, book_title, author,  num_copies_at_library
         FROM books_in_lib_sys
         ORDER BY book_title ASC;
   
@@ -706,7 +706,7 @@ BEGIN
 
      SET next_bookcase_local_num  = (
         -- If a library doesnt have any bookshelves, max is null. this will have the result be a 0 instead of NULL.
-        SELECT COALESCE(MAX(bookcase_local_num) + 1, 0)
+        SELECT COALESCE(MAX(bookcase_local_num) + 1, 1)
         FROM bookcase
         WHERE library_id = in_library_id
         );
@@ -731,7 +731,7 @@ BEGIN
     SET next_bookshelf_local_num = (
         -- If a library doesnt have any bookshelves, max is null. 
         -- This will have the result be a 0 instead of NULL.
-        SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 0)
+        SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 1)
         -- Get the shelfs in the library
         FROM (
             SELECT bookshelf.* FROM 
