@@ -325,31 +325,18 @@ BEGIN
     JOIN library ON bookcase.library_id = library.library_id
     WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
   ),
-  num_copies_available AS(
-    SELECT
-      library_id,
-      MAX(num_copies) as num_copies_in_stock
-    FROM (
-      SELECT library_id, num_copies
-      FROM (
-        -- get actual data
-        SELECT all_copies.library_id as library_id, count(checked_out_books.book_id) as num_copies
-        FROM all_copies
-        LEFT JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
-        WHERE checked_out_books.book_id IS NULL
-        GROUP BY all_copies.library_id
-      ) X
-      -- make sure to incorporate all library_id's with actual # of copies
-      UNION ALL
-      SELECT all_copies.library_id as library_id, COUNT(all_copies.book_id) AS num_copies
-      FROM all_copies
-      GROUP BY library_id
-    ) X
-    GROUP BY library_id
-  ),
   num_copies_exist AS(
     SELECT all_copies.library_id, count(*) as num_copies_at_library
     FROM all_copies
+    GROUP BY all_copies.library_id
+  ),
+  num_copies_available AS(
+    SELECT
+      all_copies.library_id,
+      (num_copies_exist.num_copies_at_library - COUNT(checked_out_books.book_id)) as num_copies_in_stock
+    FROM all_copies
+    LEFT JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
+    LEFT JOIN checked_out_books ON all_copies.book_id = checked_out_books.book_id
     GROUP BY all_copies.library_id
   ),
   -- Find how many holds there are for the book at each library
