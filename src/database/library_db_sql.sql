@@ -352,6 +352,41 @@ END $$
 DELIMITER ;
 
 
+DELIMITER $$
+CREATE PROCEDURE search_lib_sys_catalog(IN lib_sys_id_p INT)
+BEGIN
+    -- This cannot be a function because a table is returned
+    -- limit the libraries to JUST libraries in the system
+    WITH libs_in_sys AS (
+        SELECT library_id, library_name FROM library WHERE library_system = lib_sys_id_p
+    ),
+    -- Overall: lib -> bookcases -> bookshelves -> books
+    lib_bookcases AS (
+        SELECT libs_in_sys.*, bookcase.bookcase_id
+        FROM libs_in_sys
+        JOIN bookcase ON libs_in_sys.library_id = bookcase.library_id),
+    lib_book_shelves AS (
+        SELECT lib_bookcases.*, bookshelf.bookshelf_id
+        FROM lib_bookcases
+        JOIN bookshelf ON bookshelf.bookcase_id = lib_bookcases.bookcase_id
+    ),
+    -- Gets the number of each book owned at each library
+    books_in_lib_sys AS (
+        SELECT lib_book_shelves.*, book.title AS book_title, book.author, COUNT(book.title) AS num_copies_at_library
+        FROM lib_book_shelves
+        JOIN book ON lib_book_shelves.bookshelf_id = book.bookshelf_id
+        -- Get the number of copies of EACH book at EACH library
+        GROUP BY lib_book_shelves.library_name, book.title
+    )
+    
+    SELECT library_name, book_title, author,  num_copies_at_library
+        FROM books_in_lib_sys
+        ORDER BY book_title ASC;
+  
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 -- checking out a book given a book_id and user_id
 -- Adds the book to the "checked out book" table, 
 -- returns the due date
@@ -671,7 +706,7 @@ BEGIN
 
      SET next_bookcase_local_num  = (
         -- If a library doesnt have any bookshelves, max is null. this will have the result be a 0 instead of NULL.
-        SELECT COALESCE(MAX(bookcase_local_num) + 1, 0)
+        SELECT COALESCE(MAX(bookcase_local_num) + 1, 1)
         FROM bookcase
         WHERE library_id = in_library_id
         );
@@ -696,7 +731,7 @@ BEGIN
     SET next_bookshelf_local_num = (
         -- If a library doesnt have any bookshelves, max is null. 
         -- This will have the result be a 0 instead of NULL.
-        SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 0)
+        SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 1)
         -- Get the shelfs in the library
         FROM (
             SELECT bookshelf.* FROM 
@@ -966,6 +1001,29 @@ BEGIN
         );
     
     RETURN(lib_sys_id);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE FUNCTION get_lib_sys_name_from_user_id(in_user_id INT)
+ RETURNS VARCHAR(100) 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+    DECLARE user_lib_id INT;
+    DECLARE found_lib_sys_id INT;
+    DECLARE lib_sys_name VARCHAR(100);
+    -- GIVEN a user's id, returns the id of the library system 
+    -- SELECT library_system_name INTO lib_sys_name
+    SET user_lib_id  = (SELECT library_id FROM user_register WHERE in_user_id = user_id);
+    SET found_lib_sys_id = (SELECT library_system FROM library WHERE library_id = user_lib_id);
+    
+    SELECT library_sys_name INTO lib_sys_name
+        FROM library_system
+        WHERE found_lib_sys_id = library_sys_id;
+    
+    RETURN(lib_sys_name);
 END $$
 -- resets the DELIMETER
 DELIMITER ;

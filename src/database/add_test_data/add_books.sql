@@ -33,7 +33,4 @@ CALL add_new_book("Moby Dick", 2, '9780425120231', 'Herman Melville', 'Berkley P
 -- Also put Moby Dick in another system to test the search results - 4 is start of new system
 CALL add_new_book("Moby Dick", 4, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
     false, 704, 14, 812.54, .5);
-
--- TEST
--- call available_hold_count("Moby Dick");
-call search_for_book("Moby Dick");
+    

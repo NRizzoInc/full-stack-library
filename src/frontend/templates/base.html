@@ -57,6 +57,16 @@
                         {% if current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">
+                                <a href="{{ url_for('get_lib_sys_catalog') }}" class="button is-light is-info">
+                                    Book Catalog
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if current_user.is_authenticated %}
+                        <div class="navbar-item">
+                            <div class="buttons">
                                 <a href="{{ url_for('profile') }}" class="button is-primary">
                                     Profile
                                 </a>
