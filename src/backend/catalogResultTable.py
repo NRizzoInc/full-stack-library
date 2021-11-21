@@ -6,15 +6,17 @@ from typing import Optional, Dict, List
 class CatalogResultTable(Table):
     classes = ["table", "is-bordered", "is-striped", "is-hoverable", "is-fullwidth"]
     book_title = Col("Book Name")
+    author = Col("Author")
     lib_name = Col('Library Name')
     total_num_at_lib = Col('Total Number of Copies at Library')
     border = True
 
 class CatalogResultCell(object):
     def __init__(self,
-                book_title, lib_name, total_num_at_lib):
+                book_title, lib_name, total_num_at_lib, author):
         self.book_title = book_title
         self.lib_name = lib_name
+        self.author = author
         self.total_num_at_lib = total_num_at_lib
 
 def create_catalog_cells(raw_catalog_list : List[Dict]) -> List[CatalogResultCell]:
@@ -27,7 +29,9 @@ def create_catalog_cells(raw_catalog_list : List[Dict]) -> List[CatalogResultCel
         for result in raw_catalog_list:
             catalog_res.append(
                 CatalogResultCell(
-                    result['book_title'], result['library_name'],
-                    result['num_copies_at_library'])
+                    book_title = result['book_title'],
+                    author = result['author'],
+                    lib_name = result['library_name'],
+                    total_num_at_lib = result['num_copies_at_library'])
             )
     return catalog_res

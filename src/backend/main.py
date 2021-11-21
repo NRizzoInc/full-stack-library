@@ -115,7 +115,6 @@ class WebApp(UserManager):
             lib_sys_name = self.get_lib_sys_name_from_user_id(current_user.id)
             lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
             catalog_dict = self.search_lib_sys_catalog(lib_sys_id)
-
             catalog_cells = []
             if catalog_dict is not None:
                 catalog_cells = create_catalog_cells(catalog_dict)
