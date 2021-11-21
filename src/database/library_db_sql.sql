@@ -363,10 +363,8 @@ BEGIN
     LEFT OUTER JOIN num_copies_available ON all_copies.library_id = num_copies_available.library_id
     GROUP BY all_copies.library_id
   )
-  
---  SELECT * from all_copies;
- SELECT * FROM combined_table; 
--- SELECT * FROM num_copies_available; 
+
+ SELECT * FROM combined_table;
 END $$
 DELIMITER ;
 
