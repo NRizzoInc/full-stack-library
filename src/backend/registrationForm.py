@@ -18,13 +18,18 @@ class RegistrationForm(FlaskForm):
     fname = StringField("First Name", validators=[DataRequired()])
     lname = StringField("Last Name", validators=[DataRequired()])
     dob = DateField("Date of Birth", format='%Y-%m-%d', validators=[DataRequired()])
-    # TODO: add validation/method to restrict registering as employee
     is_employee = BooleanField("Are You an Employee?", validators=[])
 
     # At run time generate the choices https://wtforms.readthedocs.io/en/2.3.x/fields/#wtforms.fields.SelectField
     # choices = (value, label)
     lib_name = SelectField("Library Name", validators=[DataRequired()])
     lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
+
+    # Fields that are only required for employees - default to empty - use validators
+    hire_date = DateField("Hire Date", format='%Y-%m-%d', validators=[DataRequired()], default="")
+    salary = StringField("Salary", validators=[DataRequired()], default="")
+    job_role = StringField("Job Description", validators=[DataRequired()], default="")
+
 
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password',  validators=[DataRequired()])
@@ -43,6 +48,14 @@ class RegistrationForm(FlaskForm):
         # choices = (value, label)
         cls.lib_name = SelectField("Library Name", validators=[DataRequired(), self.validateLibSystemName, self.validateLibName])
         cls.lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
+
+        # These fields are validated to ensure they are not blank if the user is an employee
+        cls.hire_date = DateField("Hire Date (only for employees)", format='%Y-%m-%d',
+                                    validators=[self.validateEmployeeFields], default="")
+        cls.salary = StringField("Salary (only for employees)",
+                                    validators=[self.validateEmployeeFields], default="")
+        cls.job_role = StringField("Job Description (only for employees)",
+                                    validators=[self.validateEmployeeFields], default="")
 
     def validateUsername(self, form, field) -> bool():
         """
@@ -82,5 +95,16 @@ class RegistrationForm(FlaskForm):
             raise StopValidation(message=errMsg) # prints under box
         else:
             return True
+
+    def validateEmployeeFields(self, form, field) -> bool:
+        """If the new user is an employee, the field cannot be blank"""
+        if not form.is_employee.data:
+            return True
+        # The new user is an employee, make sure the field is valid
+        else:
+            # Check to make sure the field is not blank (the default)
+            print(field)
+            errMsg = "This field is required if registering as an employee, please try again"
+            raise StopValidation(message=errMsg) # prints under box
 
 

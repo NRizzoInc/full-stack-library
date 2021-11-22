@@ -2,6 +2,7 @@ import { async_post_request } from './utils.js'
 
 $(document).ready(async function() {
     await add_lib_sys_change_listener();
+    await add_is_employee_change_listener();
 });
 
 /**
@@ -50,4 +51,20 @@ async function set_library_options(lib_options)
 
     return res;
 
+}
+
+
+async function add_is_employee_change_listener()
+{
+    return await $("#is_employee").change(async function () {
+        const is_checked = document.getElementById('is_employee').checked;
+
+        // Hide employee fields for non-employees
+        const hide_fields = is_checked == true ? false : true;
+        const employee_fields = document.getElementById("employee-fields");
+
+        // $("#employee-fields").css("display", new_display)
+        employee_fields.hidden = hide_fields;
+        return true;
+    });
 }
