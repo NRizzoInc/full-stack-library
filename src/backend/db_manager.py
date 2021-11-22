@@ -243,7 +243,8 @@ class DB_Manager():
             # Result is a list of dictionaries where the key's are repeated
             search_res = self.cursor.fetchall()
             return search_res
-        except:
+        except Exception as err:
+            print("Failed to search for book: " + str(err))
             return None
 
     def search_lib_sys_catalog(self, lib_sys_id: int) -> Optional[List[Dict]]:
@@ -302,15 +303,32 @@ class DB_Manager():
                 due_date: Optional[datetime]
             }
         """
-        
+
         try:
-            # returns 1 on success
             self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
                                 (user_id, book_title, lib_sys_id, lib_id))
             # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
             # print(self.cursor._last_executed)
             res_dict = self.cursor.fetchone()
             return res_dict
+        except Exception as err:
+            raise Exception(f"Failed to checkout book: {err}")
+
+    def place_hold(self, user_id: int, book_title: str) -> bool:
+        """Places a hold on a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns: True on success
+        """
+        try:
+            self.cursor.execute("call place_hold(%s, %s)", (user_id, book_title))
+            return True
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 

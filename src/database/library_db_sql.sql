@@ -170,19 +170,15 @@ CREATE TABLE employee
 DROP TABLE IF EXISTS holds;
 CREATE TABLE holds
 (
- hold_id INT PRIMARY KEY NOT NULL,
- -- ID of book being put on hold
- book_id INT NOT NULL,
- -- ID of user who placed hold
- user_id INT NOT NULL,
- hold_start_date DATETIME NOT NULL,
- 
- -- The book on hold
- CONSTRAINT FK_hold_book
-    FOREIGN KEY (book_id) REFERENCES book(book_id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
--- The user placing the hold    
- CONSTRAINT FK_hold_user
+  hold_id INT PRIMARY KEY NOT NULL,
+  -- title of book being put on hold
+  book_title VARCHAR(200) NOT NULL,
+  -- ID of user who placed hold
+  user_id INT NOT NULL,
+  hold_start_date DATETIME NOT NULL,
+
+  -- The user placing the hold
+  CONSTRAINT FK_hold_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -521,21 +517,10 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
 BEGIN 
--- get the copy of book in checked_out_books that has been out the longest
+
 -- make a hold with that book and user date
-
--- the book_id of the book that has been checked out the longest
-DECLARE longest_loaned_book_id INT;
-SET longest_loaned_book_id = (
-  SELECT book_id
-  FROM checked_out_books 
-  WHERE (title_p = title)
-  ORDER BY checkout_date ASC 
-  LIMIT 1
-);
-
-INSERT INTO holds (hold_id, book_id, user_id, hold_start_date)
-VALUES (DEFAULT, longest_loaned_book_id, user_id_p, NOW());
+INSERT INTO holds (hold_id, book_title, user_id,   hold_start_date)
+VALUES            (DEFAULT, title_p,    user_id_p, NOW());
 
 END $$
 -- resets the DELIMETER
