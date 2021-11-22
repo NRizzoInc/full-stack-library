@@ -44,13 +44,14 @@ class UserManager(LoginManager, DB_Manager):
         def loadUser(user_id):
             """
                 \n@Brief: When Flask app is asked for "current_user", this decorator gets the current user's User object
-                \n@Note: Refence current user with `current_user` (from flask_login import current_user) 
+                \n@Note: Refence current user with `current_user` (from flask_login import current_user)
                 \n@Param: user_id - The user's unique token id
                 \n@Return: Reference to the User class related to this userToken
             """
             # create an object to hold the user's id & functions (ie checkout, return, etc)
             lib_card_num = self.get_card_num_by_user_id(user_id)
-            return User(user_id, lib_card_num)
+            is_employee = self.get_is_user_employee(user_id)
+            return User(user_id, lib_card_num, is_employee)
 
         @self.unauthorized_handler
         def onNeedToLogIn():

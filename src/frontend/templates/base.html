@@ -63,7 +63,17 @@
                             </div>
                         </div>
                         {% endif %}
-                        
+
+                        {% if current_user.is_authenticated and current_user.is_employee %}
+                        <div class="navbar-item">
+                            <div class="buttons">
+                                <a href="{{ url_for('employee_actions') }}" class="button is-link">
+                                    Employee Actions
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         {% if current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">

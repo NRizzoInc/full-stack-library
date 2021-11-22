@@ -80,8 +80,8 @@ CREATE TABLE employee
  (
     employee_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     hire_date DATE,
-    salary INT,
-    job_role VARCHAR(50),  
+    salary FLOAT,
+    job_role VARCHAR(200),  
     
     -- The user account of the employee
     user_id INT,
@@ -701,10 +701,11 @@ END $$
 DELIMITER ;
 
 
--- Inserts a new user into the DB
+
 DROP PROCEDURE IF EXISTS insert_user;
 DELIMITER $$
 CREATE PROCEDURE insert_user(
+-- Inserts a new user into the DB
   IN fname VARCHAR(50),
   IN lname VARCHAR(50),
   -- In python, call a procedure to get the library id given its name
@@ -746,11 +747,38 @@ CREATE PROCEDURE insert_user(
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
   COMMIT;
 
-
 END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS insert_employee;
+DELIMITER $$
+CREATE PROCEDURE insert_employee(
+-- Inserts a new employee into the DB
+  IN in_hire_date DATE,
+  IN in_salary FLOAT,
+  IN in_job_role varchar(200),
+  -- REQUIRES INSERT USER IS CALLED FIRST AND THE USER'S NEW id IS OBTAINED
+  IN in_user_id INT,
+  IN in_library_id INT
+) BEGIN
+  -- in case insert into lib_user fails, start a transaction that can rollback other insertions
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      ROLLBACK;
+  END;
+  START TRANSACTION;
+
+  -- insert into lib_user
+  INSERT INTO employee (employee_id, hire_date, salary, job_role, user_id, library_id)
+  -- employee_id is auto increment, so specify default behavior
+  VALUES(DEFAULT, in_hire_date, in_salary, in_job_role, in_user_id, in_library_id);
+  
+  COMMIT;
+
+END $$
+-- resets the DELIMETER
+DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
@@ -1142,6 +1170,27 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS get_is_user_employee;
+DELIMITER $$
+CREATE FUNCTION get_is_user_employee(user_id_p INT)
+ RETURNS BOOL 
+ DETERMINISTIC 
+ READS SQL DATA
+BEGIN
+ DECLARE is_user_employee BOOL;
+
+  -- check that an employee exists with a user id corresponding to the given user
+  SELECT COUNT(*) > 0
+  INTO is_user_employee
+  FROM employee
+  WHERE employee.user_id = user_id_p
+  LIMIT 1;
+  
+  RETURN(is_user_employee);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_sys_name(in_lib_sys_name VARCHAR(100))
  RETURNS INT
@@ -1283,17 +1332,41 @@ CALL insert_user(
   1, -- library_id = 1 (Charlestown - needed to test checkout_book)
   CURDATE(), true, "nickrizzo", "pwd"
 );
+-- Can do this because this is being done manually in order
+CALL insert_employee(CURDATE(), 60000, 
+    "Manages the Charlestown library. Can add new books to the catalog.",
+    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- Registration of actual emplyees via the application will handle this
+    -- First is user id - 1 because nick rizzo is the first user
+    -- 2nd is library id - 1 because it can be seen above
+    1, 1);
 
 CALL insert_user(
   "Matt", "Rizzo",
   4, -- library_id = 4 (Plymouth Public Library - another system)
   CURDATE(), true, "mattrizzo", "pwd"
 );
+CALL insert_employee(CURDATE(), 55000, 
+    "Manages the Plymouth Public library. Can add new books to the catalog.",
+    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- Registration of actual emplyees via the application will handle this
+    -- First is user id - 2nd user to be added
+    -- 2nd is library id 
+    2, 4);
+
 CALL insert_user(
   "Domenic", "Privitera",
   6, -- library_id = 6 (Cambridge Public Library - system 3)
   CURDATE(), true, "dompriv", "pwd"
 );
+
+CALL insert_employee(CURDATE(), 70000, 
+    "Manages the Cambridge Public library. Can add new books to the catalog.",
+    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- Registration of actual emplyees via the application will handle this
+    -- First is user id - 3rd user to be added
+    -- 2nd is library id 
+    3, 6);
   
 -- ##### ADD some BOOKS ####
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",

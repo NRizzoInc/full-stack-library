@@ -115,6 +115,24 @@ class DB_Manager():
             print("Error adding user: " + error)
             return 0
 
+    def addEmployee(self,
+        hire_date: str,
+        salary: float,
+        job_role: str,
+        user_id: int,
+        library_id: int
+        ) -> int:
+        """Adds an employee. Note: MUST be called AFTER a successful `addUser`.
+        \n:return - 1 on success, -1 on failure"""
+        try:
+            res = self.cursor.execute("call insert_employee(%s, %s, %s, %s, %s)",
+                                    (hire_date, salary, job_role, user_id, library_id))
+            return 1
+        except Exception as error:
+            print("Error adding employee: " + error)
+            return -1
+
+
     def updatePwd(self, username: str, pwd: str) -> bool:
         """Updates a user's password (with 'username'). NOTE: Only call after validation. Return True = success"""
         try:
@@ -274,6 +292,16 @@ class DB_Manager():
             return int(lib_card_num)
         except Exception as err:
             print(f"Failed to get lib card num by user id: {err}")
+
+    def get_is_user_employee(self, user_id) -> bool:
+        """Returns true if the user with the given id is an employee, false otherwise"""
+        try:
+            self.cursor.execute("select get_is_user_employee(%s)", (user_id))
+            is_employee = list(self.cursor.fetchone().values())[0]
+            return bool(is_employee)
+        except Exception as err:
+            print(f"Failed to determine if user with id {user_id} is an employee: {err}")
+            return False
 
     def get_card_num_by_username(self, username) -> Optional[int]:
         """Returns a user's library card# or None if user doesnt exist. Call AFTER addUser()"""

@@ -152,7 +152,7 @@ class WebApp(UserManager):
                 if checkout_res_dict["rtncode"] == -1:
                     flash("No more copies available.", "is-danger")
                 return redirect(url_for("index"))
-            
+
             # TODO: have due_date be part of procedure results
             # TODO: have success_status include number of people ahead of them on hold
             flash("Successfully checked out: " + str(book_title), "is-success")
@@ -227,13 +227,13 @@ class WebApp(UserManager):
                 # call loadUser() / @user_loader in userManager.py
                 user_id = self.getUserIdFromUsername(form.username.data)
                 lib_card_num = self.get_card_num_by_user_id(user_id)
-                user = User(user_id, lib_card_num)
+                is_employee = self.get_is_user_employee(user_id)
+                user = User(user_id, lib_card_num, is_employee=is_employee)
                 login_user(user, remember=form.rememberMe.data)
 
                 # two seperate flashes for diff categories
                 flash("Successfully logged in!", "is-success")
-                # format str safe bc not user input
-                flash(f"Library Card Number: {lib_card_num}", "is-info")
+                flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
 
             # route to original destination
             next = flask.request.args.get('next')
@@ -270,6 +270,7 @@ class WebApp(UserManager):
 
             if request.method == "POST" and form.validate_on_submit():
                 # actually add user given info is valid/allowed
+                add_employee_res = None
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
@@ -279,20 +280,49 @@ class WebApp(UserManager):
                     form.username.data,
                     form.password.data
                 )
+                # When the new user is an employee, add them as an employee as well
+                if form.is_employee.data == True and add_res == 1:
+                    print("adding employee")
+                    # get the user and lib id created for them as a user
+                    new_user_id = self.getUserIdFromUsername(form.username.data)
+                    lib_id = self.get_lib_id_from_user_id(new_user_id)
+                    add_employee_res = self.addEmployee(
+                        form.hire_date.data,
+                        form.salary.data,
+                        form.job_role.data,
+                        new_user_id,
+                        lib_id
+                    )
+
                 if (add_res == -1):
                     flash("Username already taken", "is-danger")
                 elif (add_res == 1):
                     card_num = self.get_card_num_by_username(form.username.data)
-                    flash("Congratulations, you are now a registered user! \
-                          Your library card number is " + str(card_num), "is-success")
+                    msg = "Congratulations, you are now a registered user! \
+                          Your library card number is " + str(card_num)
+                    if(add_employee_res == 1):
+                        msg = msg + "\nYou are also a registered employee now!"
+                    flash(msg, " is-success")
                     return redirect(url_for("login"))
                 elif (add_res == 0):
                     flash('Registration Failed!', "is-danger")
+                elif (add_employee_res == -1):
+                    flash('Registration as user was successful! Registration as employee failed!', "is-danger")
             elif request.method == "POST":
                 print("Registration Validation Failed")
 
             # on GET or failure, reload
             return render_template('registration.html', title='LibraryDB Registration', form=form)
+
+        @self._app.route("/employee_actions", methods=["GET", "POST"])
+        @login_required
+        def employee_actions():
+            """Page used to allow employees to perform employee ONLY actions like add books"""
+            if not current_user.is_employee:
+                # Only employees can access this page
+                return redirect("/")
+            else:
+                return render_template("employeeActions.html")
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
