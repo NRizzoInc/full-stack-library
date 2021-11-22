@@ -62,8 +62,6 @@ async function add_is_employee_change_listener()
         // Hide employee fields for non-employees
         const hide_fields = is_checked == true ? false : true;
         const employee_fields = document.getElementById("employee-fields");
-
-        // $("#employee-fields").css("display", new_display)
         employee_fields.hidden = hide_fields;
         return true;
     });
