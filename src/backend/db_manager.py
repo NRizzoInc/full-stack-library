@@ -112,7 +112,7 @@ class DB_Manager():
                                 (fname, lname, library_id, dob, is_employee, username, pwd))
             return 1
         except Exception as error:
-            print("Error adding user: " + error)
+            print("Error adding user: " + str(error))
             return 0
 
     def addEmployee(self,
@@ -129,7 +129,7 @@ class DB_Manager():
                                     (hire_date, salary, job_role, user_id, library_id))
             return 1
         except Exception as error:
-            print("Error adding employee: " + error)
+            print("Error adding employee: " + str(error))
             return -1
 
 

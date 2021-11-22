@@ -7,9 +7,11 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.fields.core import SelectField
 from wtforms.fields.html5 import DateField
-from wtforms.validators import ValidationError, DataRequired, EqualTo, StopValidation
+from wtforms.validators import ValidationError, DataRequired, EqualTo, StopValidation, Optional
+from wtforms import validators
 from flask import flash, Flask
 from typing import Optional, List, Tuple
+import datetime
 
 #--------------------------------OUR DEPENDENCIES--------------------------------#
 from userManager import UserManager
@@ -26,9 +28,9 @@ class RegistrationForm(FlaskForm):
     lib_sys_name = SelectField("Library System Name", validators=[DataRequired()])
 
     # Fields that are only required for employees - default to empty - use validators
-    hire_date = DateField("Hire Date", format='%Y-%m-%d', validators=[DataRequired()], default="")
-    salary = StringField("Salary", validators=[DataRequired()], default="")
-    job_role = StringField("Job Description", validators=[DataRequired()], default="")
+    hire_date = DateField("Hire Date", format='%Y-%m-%d', validators=[])
+    salary = StringField("Salary", validators=[], default="")
+    job_role = StringField("Job Description", validators=[], default="")
 
 
     username = StringField('Username', validators=[DataRequired()])
@@ -51,11 +53,11 @@ class RegistrationForm(FlaskForm):
 
         # These fields are validated to ensure they are not blank if the user is an employee
         cls.hire_date = DateField("Hire Date (only for employees)", format='%Y-%m-%d',
-                                    validators=[self.validateEmployeeFields], default="")
+                                    validators=[self.validateEmployeeFields], default=datetime.date.today())
         cls.salary = StringField("Salary (only for employees)",
-                                    validators=[self.validateEmployeeFields], default="")
+                                    validators=[self.validateEmployeeFields])
         cls.job_role = StringField("Job Description (only for employees)",
-                                    validators=[self.validateEmployeeFields], default="")
+                                    validators=[self.validateEmployeeFields])
 
     def validateUsername(self, form, field) -> bool():
         """
@@ -98,13 +100,14 @@ class RegistrationForm(FlaskForm):
 
     def validateEmployeeFields(self, form, field) -> bool:
         """If the new user is an employee, the field cannot be blank"""
-        if not form.is_employee.data:
+        if form.is_employee.data == False:
             return True
         # The new user is an employee, make sure the field is valid
+        # Check to make sure the field is not blank (the default)
+        elif field.data == "" or field.data is None:
+            errMsg = f"This field is required if registering as an employee, please try again"
+            raise ValidationError(message=errMsg) # prints under box
+        elif field.name == "hire_date":
+            print(field.data)
         else:
-            # Check to make sure the field is not blank (the default)
-            print(field)
-            errMsg = "This field is required if registering as an employee, please try again"
-            raise StopValidation(message=errMsg) # prints under box
-
-
+            return True

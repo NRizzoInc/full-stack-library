@@ -31,3 +31,11 @@
         return res;
     }
 }
+
+export function getTodayDate()
+{
+    // Ref: https://stackoverflow.com/a/52802548/14810215 
+    // toISOString is used to get it in the right format required by the input field
+    const today = new Date().toISOString().split('T')[0]
+    return(today);
+}

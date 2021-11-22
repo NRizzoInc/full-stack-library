@@ -1,6 +1,16 @@
-import { async_post_request } from './utils.js'
+import { async_post_request, getTodayDate } from './utils.js'
 
 $(document).ready(async function() {
+    // Set default hire date to today for ease of use
+    var now = new Date();
+    var day = ("0" + now.getDate()).slice(-2);
+    var month = ("0" + (now.getMonth() + 1)).slice(-2);
+    var today = now.getFullYear()+"-"+(month)+"-"+(day) ;
+
+    $("#hire_date").val(today);
+
+    // document.getElementById("hire_date").valueAsDate = new Date()
+
     await add_lib_sys_change_listener();
     await add_is_employee_change_listener();
 });
@@ -66,3 +76,4 @@ async function add_is_employee_change_listener()
         return true;
     });
 }
+
