@@ -256,7 +256,7 @@ class DB_Manager():
         except:
             return None
 
-    def get_sys_id_from_user_id(self, user_id) -> Optional[int]:
+    def get_lib_sys_id_from_user_id(self, user_id) -> Optional[int]:
         """Given a user's id, returns the id of the library system"""
         try:
             self.cursor.execute("select get_lib_sys_id_from_user_id(%s)", (user_id))
