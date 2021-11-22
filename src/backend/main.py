@@ -165,6 +165,8 @@ class WebApp(UserManager):
                 hold_res = self.place_hold(user_id, book_title)
             except Exception as err:
                 print(f"Failed to checkout book err: {err}")
+                flash("Failed to checkout book " + str(book_title), "is-danger")
+                return redirect(url_for("index"))
 
             if(not hold_res):
                 flash(f"Failed to place hold on book!", "is-danger")

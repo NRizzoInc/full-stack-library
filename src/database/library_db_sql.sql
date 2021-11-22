@@ -180,7 +180,7 @@ CREATE TABLE book_inventory (
 DROP TABLE IF EXISTS holds;
 CREATE TABLE holds
 (
-  hold_id INT PRIMARY KEY NOT NULL,
+  hold_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
   -- title of book being put on hold
   isbn VARCHAR(17) NOT NULL,
   -- ID of user who placed hold
@@ -536,17 +536,18 @@ CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
 BEGIN
   -- get isbn from title
   DECLARE book_isbn VARCHAR(17);
-  
+
   SET book_isbn = (
     SELECT isbn FROM book WHERE title_p = title
   );
 
--- make a hold with that book and user date
-INSERT INTO holds (hold_id, isbn,      user_id,   hold_start_date)
-VALUES            (DEFAULT, book_isbn, user_id_p, NOW());
+  -- make a hold with that book and user date
+  INSERT INTO holds (hold_id, isbn,      user_id,   hold_start_date)
+  VALUES            (DEFAULT, book_isbn, user_id_p, NOW());
+
+  COMMIT;
 
 END $$
--- resets the DELIMETER
 DELIMITER ;
 
 -- returns a book to the library
