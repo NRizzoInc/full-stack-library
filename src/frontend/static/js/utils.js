@@ -34,8 +34,11 @@
 
 export function getTodayDate()
 {
-    // Ref: https://stackoverflow.com/a/52802548/14810215 
-    // toISOString is used to get it in the right format required by the input field
-    const today = new Date().toISOString().split('T')[0]
+    // Inspired by https://stackoverflow.com/a/12347050/14810215
+    // the time might not be right based on the time zone
+    const now = new Date();
+    const day = ("0" + now.getDate()).slice(-2);
+    const month = ("0" + (now.getMonth() + 1)).slice(-2);
+    const today = now.getFullYear()+"-"+(month)+"-"+(day) ;
     return(today);
 }

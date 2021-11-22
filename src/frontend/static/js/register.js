@@ -2,14 +2,8 @@ import { async_post_request, getTodayDate } from './utils.js'
 
 $(document).ready(async function() {
     // Set default hire date to today for ease of use
-    var now = new Date();
-    var day = ("0" + now.getDate()).slice(-2);
-    var month = ("0" + (now.getMonth() + 1)).slice(-2);
-    var today = now.getFullYear()+"-"+(month)+"-"+(day) ;
-
-    $("#hire_date").val(today);
-
-    // document.getElementById("hire_date").valueAsDate = new Date()
+    $("#hire_date").val(getTodayDate());
+    set_employee_hidden_state();
 
     await add_lib_sys_change_listener();
     await add_is_employee_change_listener();
@@ -67,13 +61,18 @@ async function set_library_options(lib_options)
 async function add_is_employee_change_listener()
 {
     return await $("#is_employee").change(async function () {
-        const is_checked = document.getElementById('is_employee').checked;
-
-        // Hide employee fields for non-employees
-        const hide_fields = is_checked == true ? false : true;
-        const employee_fields = document.getElementById("employee-fields");
-        employee_fields.hidden = hide_fields;
-        return true;
+        set_employee_hidden_state()
     });
+}
+
+function set_employee_hidden_state()
+{
+    const is_checked = document.getElementById('is_employee').checked;
+
+    // Hide employee fields for non-employees
+    const hide_fields = is_checked == true ? false : true;
+    const employee_fields = document.getElementById("employee-fields");
+    employee_fields.hidden = hide_fields;
+    return true;
 }
 
