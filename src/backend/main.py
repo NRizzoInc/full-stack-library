@@ -284,7 +284,6 @@ class WebApp(UserManager):
                 )
                 # When the new user is an employee, add them as an employee as well
                 if form.is_employee.data == True and add_res == 1:
-                    print("adding employee")
                     # get the user and lib id created for them as a user
                     new_user_id = self.getUserIdFromUsername(form.username.data)
                     lib_id = self.get_lib_id_from_user_id(new_user_id)
@@ -357,26 +356,26 @@ class WebApp(UserManager):
                 return redirect("/")
 
             # Otherwise, validate the form
-            form = AddBookForm(request.form)
+            add_book_form = AddBookForm(request.form)
             if request.method == "POST" and form.validate_on_submit():
                 user_id = current_user.id
                 library_id = self.get_lib_id_from_user_id(user_id)
                 library_name = self.get_lib_name_from_id(user_id)
                 add_book_res = self.add_new_book(
-                    title = form.book_title.data,
-                    lib_id = library_id,
-                    isbn = form.isbn.data,
-                    author=form.author.data,
-                    publisher=form.publisher.data,
-                    is_audio_book=form.is_audio_book.data,
-                    num_pages=form.num_pages.data,
-                    checkout_length_days=form.checkout_length_days.data,
-                    book_dewey=form.book_dewey.data,
-                    late_fee_per_day=form.late_fee_per_day.data
+                    title =                 add_book_form.book_title.data,
+                    lib_id =                library_id,
+                    isbn =                  add_book_form.isbn.data,
+                    author =                add_book_form.author.data,
+                    publisher =             add_book_form.publisher.data,
+                    is_audio_book =         add_book_form.is_audio_book.data,
+                    num_pages =             add_book_form.num_pages.data,
+                    checkout_length_days =  add_book_form.checkout_length_days.data,
+                    book_dewey =            add_book_form.book_dewey.data,
+                    late_fee_per_day =      add_book_form.late_fee_per_day.data
                 )
 
                 if (add_book_res == 1):
-                    msg = f"The book {form.book_title.data} was added to library {library_name}"
+                    msg = f"The book {add_book_form.book_title.data} was added to library {library_name}"
                     flash(msg, " is-success")
                     return redirect(url_for("login"))
                 elif (add_book_res == -1):
@@ -386,7 +385,7 @@ class WebApp(UserManager):
                 flash("Add New Book Validation Failed", "is-danger")
 
             # Return to the employee action page
-            return render_template("employeeActions.html", add_new_book_form=AddBookForm())
+            return render_template("employeeActions.html", add_new_book_form=add_book_form)
     def printSites(self):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")

@@ -50,10 +50,13 @@ class AddBookForm(FlaskForm):
         try:
             float_convert = float(field.data)
         except:
+            print("before validation error from convert")
+
             raise ValidationError(message=errMsg) # prints under box
 
         if isinstance(float_convert, float):
             print("passed validation")
             return True
         else:
+            print("before validation error from isinstance")
             raise ValidationError(message=errMsg) # prints under box
