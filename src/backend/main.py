@@ -357,10 +357,21 @@ class WebApp(UserManager):
 
             # Otherwise, validate the form
             add_book_form = AddBookForm(request.form)
+            user_id = current_user.id
+            library_id = self.get_lib_id_from_user_id(user_id)
+            library_name = self.get_lib_name_from_id(user_id)
             if request.method == "POST" and add_book_form.validate_on_submit():
-                user_id = current_user.id
-                library_id = self.get_lib_id_from_user_id(user_id)
-                library_name = self.get_lib_name_from_id(user_id)
+                print(f"book_title = {add_book_form.book_title.data}, \
+                    \n library_id = {library_id}, \
+                    \n isbn = {add_book_form.isbn.data}, \
+                    \n author = {add_book_form.author.data}, \
+                    \n publisher = {add_book_form.publisher.data}, \
+                    \n is_audio_book = {add_book_form.is_audio_book.data}, \
+                    \n num_pages = {add_book_form.num_pages.data}, \
+                    \n checkout_length_days = {add_book_form.checkout_length_days.data}, \
+                    \n book_dewey = {add_book_form.book_dewey.data}, \
+                    \n late_fee_per_day = {add_book_form.late_fee_per_day.data}"
+                        )
                 add_book_res = self.add_new_book(
                     title =                 add_book_form.book_title.data,
                     lib_id =                library_id,
@@ -379,7 +390,7 @@ class WebApp(UserManager):
                     flash(msg, " is-success")
                     return redirect(url_for("login"))
                 elif (add_book_res == -1):
-                    flash('Failed to add the book {form.book_title.data} to library {library_name}!', "is-danger")
+                    flash(f'Failed to add the book {add_book_form.book_title.data} to library {library_name}!', "is-danger")
 
             elif request.method == "POST":
                 flash("Add New Book Validation Failed", "is-danger")

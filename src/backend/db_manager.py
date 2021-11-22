@@ -385,7 +385,7 @@ class DB_Manager():
                                     checkout_length_days, book_dewey, late_fee_per_day))
             return 1
         except Exception as error:
-            print("Error adding employee: " + str(error))
+            print("Error adding new book: " + str(error))
             return -1
 
 
