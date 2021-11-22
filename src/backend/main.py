@@ -159,18 +159,21 @@ class WebApp(UserManager):
             flash("Due Date: " + str(checkout_res_dict["due_date"]), "is-info")
             return redirect(url_for("index"))
 
-        def handleHold(book_title: str, user_id: int):
+        def handleHold(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
             # place hold on book w/ error check
             try:
-                hold_res = self.place_hold(user_id, book_title)
+                hold_res_dict = self.place_hold(user_id, book_title, lib_sys_id, lib_id)
             except Exception as err:
-                print(f"Failed to checkout book err: {err}")
-                flash("Failed to checkout book " + str(book_title), "is-danger")
+                errMsg = "Failed to place hold on " + str(book_title)
+                print(f"{errMsg}: {err}")
+                flash(errMsg, "is-danger")
                 return redirect(url_for("index"))
 
-            if(not hold_res):
-                flash(f"Failed to place hold on book!", "is-danger")
+            if(hold_res_dict["rtncode"] == 0):
+                flash("Failed to place hold on book!", "is-danger")
+                flash("You already placed a hold on '"+str(book_title)+"' at this library", "is-warning")
                 return redirect(url_for("index"))
+
             flash("Successfully placed hold on " + str(book_title), "is-success")
             return redirect(url_for("index"))
 
@@ -198,7 +201,7 @@ class WebApp(UserManager):
             if is_checkout:
                 return handleCheckout(book_title, user_id, lib_sys_id, lib_id)
             else: # is_hold
-                return handleHold(book_title, user_id)
+                return handleHold(book_title, user_id, lib_sys_id, lib_id)
 
     def createUserPages(self):
         # https://flask-login.readthedocs.io/en/latest/#login-example

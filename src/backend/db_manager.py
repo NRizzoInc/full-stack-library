@@ -314,21 +314,27 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 
-    def place_hold(self, user_id: int, book_title: str) -> bool:
+    def place_hold(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> Dict[str, int]:
         """Places a hold on a book with 'book_title' for 'user_id'
 
         Args:
             user_id (int): The user's id
             book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
 
         Raises:
             Exception: Basic exception with a string detailing any non-expected errors
 
-        Returns: True on success
+        Returns: {rtncode: <code>}
+            code = 0: user already placed a hold on that book at that library
+            code = 1: success
         """
         try:
-            self.cursor.execute("call place_hold(%s, %s)", (user_id, book_title))
-            return True
+            self.cursor.execute("call place_hold(%s, %s, %s, %s)",
+                                (user_id, book_title, lib_sys_id, lib_id))
+            hold_res_dict = self.cursor.fetchone()
+            return hold_res_dict
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 

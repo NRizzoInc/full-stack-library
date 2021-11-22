@@ -185,6 +185,8 @@ CREATE TABLE holds
   isbn VARCHAR(17) NOT NULL,
   -- ID of user who placed hold
   user_id INT NOT NULL,
+  lib_sys_id INT NOT NULL,
+  library_id INT NOT NULL,
   hold_start_date DATETIME NOT NULL,
 
   -- the isbn belonging to the book on hold
@@ -195,6 +197,14 @@ CREATE TABLE holds
   -- The user placing the hold
   CONSTRAINT FK_hold_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+    
+  CONSTRAINT FK_hold_lib_sys
+    FOREIGN KEY (lib_sys_id) REFERENCES library_system(library_sys_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  
+  CONSTRAINT FK_hold_lib
+    FOREIGN KEY (library_id) REFERENCES library(library_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -310,6 +320,9 @@ DELIMITER ;
 -- PROCEDURES
 --
 
+-- CALL place_hold(1, "Moby Dick", 1, 2); -- lib_id = 2 start off with only book checked out
+-- CALL place_hold(2, "Moby Dick", 1, 2); -- results in 2 holds in "Central Library..." (diff users)
+-- CALL place_hold(2, "Moby Dick", 3, 1); -- results in 3 holds (at least 1 at each lib)
 -- CALL search_for_book("Moby Dick", 1);
 
 -- Lists the library branch where each available copy of a book is located
@@ -318,6 +331,9 @@ DELIMITER $$
 CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50), IN lib_sys_id_p INT)
 BEGIN
 -- This cannot be a function because a table is returned
+ DECLARE derived_isbn VARCHAR(17);
+ SET derived_isbn = (SELECT isbn FROM book WHERE title = booktitle_p LIMIT 1);
+ 
  WITH
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
@@ -330,12 +346,11 @@ BEGIN
       bookshelf.bookshelf_local_num,
       bookcase.bookcase_id,
       bookshelf.bookshelf_id
-    FROM book
-    JOIN book_inventory ON book_inventory.isbn = book.isbn
+    FROM book_inventory
     JOIN bookshelf ON book_inventory.bookshelf_id = bookshelf.bookshelf_id
     JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
     JOIN library ON bookcase.library_id = library.library_id
-    WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system AND book.title = booktitle_p)
+    WHERE (book_inventory.isbn = derived_isbn AND lib_sys_id_p = library.library_system)
   ),
   num_copies_exist AS(
     SELECT all_copies.library_id, count(*) as num_copies_at_library
@@ -353,13 +368,20 @@ BEGIN
     GROUP BY all_copies.library_id
   ),
   -- Find how many holds there are for the book at each library
+  relevant_holds AS (
+    SELECT all_copies.*, holds.hold_id, holds.user_id
+    FROM all_copies
+    LEFT JOIN holds ON holds.library_id = all_copies.library_id -- AND holds.isbn = all_copies.isbn 
+    WHERE holds.isbn = derived_isbn
+    -- multiple users at one library can have the "same" hold
+    GROUP BY holds.library_id, holds.user_id
+  ),
   num_holds AS(
     SELECT
-      all_copies.library_id,
-      COUNT(holds.isbn) AS number_holds
-    FROM all_copies
-    LEFT OUTER JOIN holds ON all_copies.isbn = holds.isbn
-    GROUP BY all_copies.library_id
+      relevant_holds.library_id,
+      COUNT(*) AS number_holds
+    FROM relevant_holds
+    GROUP BY relevant_holds.library_id
   ),
   combined_table AS (
     SELECT
@@ -368,7 +390,8 @@ BEGIN
       num_copies_exist.num_copies_at_library,
       num_copies_available.num_checked_out,
       num_copies_available.num_copies_in_stock,
-      num_holds.number_holds
+      -- if no holds, may be null, replace with 0
+      coalesce(num_holds.number_holds, 0) AS number_holds
     FROM all_copies
     LEFT OUTER JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
     LEFT OUTER JOIN num_holds ON num_holds.library_id = all_copies.library_id
@@ -376,7 +399,7 @@ BEGIN
     GROUP BY all_copies.library_id
   )
 
- SELECT * FROM combined_table;
+  SELECT * FROM combined_table;
 END $$
 DELIMITER ;
 
@@ -531,22 +554,42 @@ DELIMITER ;
 
 -- Procedure to place a hold for a book
 -- will put a hold on the copy of the book that has been checked out the longest
+DROP PROCEDURE IF EXISTS place_hold;
 DELIMITER $$
-CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
-BEGIN
+CREATE PROCEDURE place_hold(
+  IN user_id_p INT,
+  IN title_p VARCHAR(200),
+  IN lib_sys_id_p INT,
+  IN lib_id_p INT
+) place_hold_label:BEGIN
+  -- returns {rtncode: <code>}
+  -- code = 0: user already placed a hold on that book at that library
+  -- code = 1: success
+
   -- get isbn from title
   DECLARE book_isbn VARCHAR(17);
 
   SET book_isbn = (
-    SELECT isbn FROM book WHERE title_p = title
+    SELECT isbn FROM book WHERE book.title = title_p
   );
 
+  -- make sure user doesnt have a hold on this book already
+  IF EXISTS (
+    SELECT * FROM holds
+    JOIN book ON book.isbn = holds.isbn
+    WHERE (lib_sys_id_p = holds.lib_sys_id AND user_id = user_id_p AND holds.isbn = book_isbn)
+  ) THEN
+    SELECT 0 as rtncode;
+    LEAVE place_hold_label;
+  END IF;
+
   -- make a hold with that book and user date
-  INSERT INTO holds (hold_id, isbn,      user_id,   hold_start_date)
-  VALUES            (DEFAULT, book_isbn, user_id_p, NOW());
+  INSERT INTO holds (hold_id, isbn,      user_id,   lib_sys_id,   library_id,  hold_start_date)
+  VALUES            (DEFAULT, book_isbn, user_id_p, lib_sys_id_p, lib_id_p,    NOW());
 
   COMMIT;
 
+  SELECT 1 as rtncode;
 END $$
 DELIMITER ;
 
@@ -1058,11 +1101,11 @@ END $$
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_user_id(in_user_id INT)
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
-    DECLARE lib_sys_id BOOL;
+    DECLARE lib_sys_id INT;
     -- GIVEN a user's id, returns the id of the library system 
     SELECT library_system INTO lib_sys_id
         FROM library
@@ -1101,11 +1144,11 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_sys_name(in_lib_sys_name VARCHAR(100))
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
-    DECLARE lib_sys_id BOOL;
+    DECLARE lib_sys_id INT;
     -- GIVEN a user's id, returns the id of the library system 
     SELECT library_system INTO lib_sys_id
         FROM library
