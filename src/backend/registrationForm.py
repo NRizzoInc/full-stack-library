@@ -55,7 +55,7 @@ class RegistrationForm(FlaskForm):
         cls.hire_date = DateField("Hire Date (only for employees)", format='%Y-%m-%d',
                                     validators=[self.validateEmployeeFields], default=datetime.date.today())
         cls.salary = StringField("Salary (only for employees)",
-                                    validators=[self.validateEmployeeFields])
+                                    validators=[self.validateEmployeeFields, self.validateSalaryField])
         cls.job_role = StringField("Job Description (only for employees)",
                                     validators=[self.validateEmployeeFields])
 
@@ -107,7 +107,13 @@ class RegistrationForm(FlaskForm):
         elif field.data == "" or field.data is None:
             errMsg = f"This field is required if registering as an employee, please try again"
             raise ValidationError(message=errMsg) # prints under box
-        elif field.name == "hire_date":
-            print(field.data)
         else:
             return True
+
+    def validateSalaryField(self, form, field) -> bool:
+        """Salary must be a float compatible value"""
+        try:
+            float(form.salary.data)
+        except:
+            errMsg = f"Salary must be a number. Do not include symbols or letters"
+            raise ValidationError(message=errMsg) # prints under box
