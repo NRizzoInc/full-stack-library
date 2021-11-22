@@ -1,7 +1,106 @@
 {% extends "base.html" %}
 
-{% block content %}
 <h1 class="title">
     Welcome, Employee!
 </h1>
-{% endblock %}
+
+<body>
+
+    {% block content %}
+    <div class="column is-4 is-offset-4">
+        <h3 class="title">Add a New Book to the Library</h3>
+        <div class="box">
+            <form action="/add_new_book", method="post">
+                {{ add_new_book_form.hidden_tag() }}
+                <div class="field">
+                    <div class="control">
+                    {% include "flash.html" %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.book_title.label(class="label") }}
+                        {{ add_new_book_form.book_title(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.book_title.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.isbn.label(class="label") }}
+                        {{ add_new_book_form.isbn(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.isbn.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.author.label(class="label") }}
+                        {{ add_new_book_form.author(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.isbn.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.publisher.label(class="label") }}
+                        {{ add_new_book_form.publisher(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.publisher.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.is_audio_book.label(class="label") }}
+                        {{ add_new_book_form.is_audio_book(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.is_audio_book.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.num_pages.label(class="label") }}
+                        {{ add_new_book_form.num_pages(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.num_pages.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.checkout_length_days.label(class="label") }}
+                        {{ add_new_book_form.checkout_length_days(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.checkout_length_days.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.late_fee_per_day.label(class="label") }}
+                        {{ add_new_book_form.late_fee_per_day(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.late_fee_per_day.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        {{ add_new_book_form.book_dewey.label(class="label") }}
+                        {{ add_new_book_form.book_dewey(class="input is-medium", placeholder="Book Title") }}
+                        {% for error in add_new_book_form.book_dewey.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p>{{ add_new_book_form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
+            </add_new_book_form>
+        </div>
+    </div>
+    {% endblock %}
+</body>

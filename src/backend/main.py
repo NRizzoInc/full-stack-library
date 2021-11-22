@@ -29,6 +29,7 @@ from userManager import UserManager
 from registrationForm import RegistrationForm
 from loginForm import LoginForm
 from forgotPasswordForm import ForgotPwdForm
+from addBookForm import AddBookForm
 
 class WebApp(UserManager):
     def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
@@ -77,6 +78,7 @@ class WebApp(UserManager):
         self.createCheckoutPages()
         self.createUserPages()
         self.createInfoRoutes()
+        self.createEmployeeRoutes()
 
         # TODO: make a route for employees to add a new book to the library
 
@@ -322,7 +324,7 @@ class WebApp(UserManager):
                 # Only employees can access this page
                 return redirect("/")
             else:
-                return render_template("employeeActions.html")
+                return render_template("employeeActions.html", add_new_book_form=AddBookForm())
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
@@ -345,6 +347,34 @@ class WebApp(UserManager):
             flash("Successfully logged out!", "is-success")
             return redirect(url_for("login"))
 
+    def createEmployeeRoutes(self):
+        @self._app.route("/add_new_book", methods=["GET", "POST"])
+        @login_required
+        def add_new_book():
+            """Page used to allow employees to perform employee ONLY actions like add books"""
+            if not current_user.is_employee:
+                # Only employees can access this page
+                return redirect("/")
+
+            # Otherwise, validate the form
+            form = AddBookForm(request.form)
+            if request.method == "POST" and form.validate_on_submit():
+                library_id = self.get_lib_id_from_user_id()
+                library_name = self.get_lib_name_from_id(current_user.user_id)
+                add_book_res = None
+
+                if (add_book_res == 1):
+                    msg = f"The book {form.book_title.data} was added to library {library_name}"
+                    flash(msg, " is-success")
+                    return redirect(url_for("login"))
+                elif (add_book_res == 0):
+                    flash('Failed to add the book {form.book_title.data} to library {library_name}!', "is-danger")
+
+            elif request.method == "POST":
+                print("Registration Validation Failed")
+
+            # Return to the employee action page
+            return render_template("employeeActions.html", add_new_book_form=AddBookForm())
     def printSites(self):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")

@@ -112,8 +112,12 @@ class RegistrationForm(FlaskForm):
 
     def validateSalaryField(self, form, field) -> bool:
         """Salary must be a float compatible value"""
+        errMsg = f"Salary must be a number. Do not include symbols or letters"
         try:
-            float(form.salary.data)
+            float_convert = int(field.data)
+            if isinstance(float_convert, float):
+                return True
+            else:
+                raise ValidationError(message=errMsg) # prints under box
         except:
-            errMsg = f"Salary must be a number. Do not include symbols or letters"
             raise ValidationError(message=errMsg) # prints under box

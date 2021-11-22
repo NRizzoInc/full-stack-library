@@ -244,9 +244,9 @@ class DB_Manager():
         except:
             return ""
 
-    def get_lib_name_from_id(self, sys_id: int) -> str:
+    def get_lib_name_from_id(self, lib_id: int) -> str:
         try:
-            self.cursor.execute("select get_lib_name_from_id(%s)", (sys_id))
+            self.cursor.execute("select get_lib_name_from_id(%s)", (lib_id))
             lib_name = list(self.cursor.fetchone().values())[0]
             return str(lib_name)
         except:
@@ -365,6 +365,29 @@ class DB_Manager():
             return hold_res_dict
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
+
+    def add_new_book(self,
+        title : str,
+        lib_id : int,
+        isbn : str,
+        author : str,
+        publisher : str,
+        is_audio_book : bool,
+        num_pages : int,
+        checkout_length_days : int,
+        book_dewey: float,
+        late_fee_per_day: float) -> bool:
+        """Used by employees to add a new book to a library.
+        \n:return - 1 on success, -1 on failure"""
+        try:
+            res = self.cursor.execute("call add_new_book(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                                    (title, lib_id, isbn, author, publisher, is_audio_book, num_pages,
+                                    checkout_length_days, book_dewey, late_fee_per_day))
+            return 1
+        except Exception as error:
+            print("Error adding employee: " + str(error))
+            return -1
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")

@@ -15,8 +15,3 @@ class BookSearchForm(FlaskForm):
     """Form responsible for having fields to enable users to lookup books"""
     book_title = StringField('Search For A Book')
     submit = SubmitField('Search')
-
-# TODO: add form to add book
-# TODO: add request new book be added
-# TODO: add user login
-# TODO: add employee login
