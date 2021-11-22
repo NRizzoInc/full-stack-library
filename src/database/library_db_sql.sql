@@ -154,7 +154,7 @@ CREATE TABLE book (
 DROP TABLE IF EXISTS book_inventory;
 CREATE TABLE book_inventory (
   book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  book_isbn VARCHAR(17) NOT NULL,
+  isbn VARCHAR(17) NOT NULL,
   loaned_by INT,
   bookshelf_id INT,
   checkout_length_days INT,
@@ -163,7 +163,7 @@ CREATE TABLE book_inventory (
   -- The employee ID of who loaned out this book
 
   CONSTRAINT fk_book_isbn
-    FOREIGN KEY (book_isbn) REFERENCES book(isbn)
+    FOREIGN KEY (isbn) REFERENCES book(isbn)
     ON UPDATE CASCADE ON DELETE CASCADE,
 
   CONSTRAINT FK_book_employee
@@ -182,10 +182,15 @@ CREATE TABLE holds
 (
   hold_id INT PRIMARY KEY NOT NULL,
   -- title of book being put on hold
-  book_title VARCHAR(200) NOT NULL,
+  isbn VARCHAR(17) NOT NULL,
   -- ID of user who placed hold
   user_id INT NOT NULL,
   hold_start_date DATETIME NOT NULL,
+
+  -- the isbn belonging to the book on hold
+  CONSTRAINT FK_hold_isbn
+    FOREIGN KEY (isbn) REFERENCES book(isbn)
+    ON UPDATE CASCADE ON DELETE CASCADE,
 
   -- The user placing the hold
   CONSTRAINT FK_hold_user
@@ -317,19 +322,20 @@ BEGIN
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
     SELECT
-      relevent_books.book_id,
+      book_inventory.book_id,
+      book_inventory.isbn,
       library.library_name,
       library.library_id,
       bookcase.bookcase_local_num,
       bookshelf.bookshelf_local_num,
       bookcase.bookcase_id,
       bookshelf.bookshelf_id
-    -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
-    FROM (SELECT * FROM book WHERE book.title = booktitle_p) relevent_books
-    JOIN bookshelf ON relevent_books.bookshelf_id = bookshelf.bookshelf_id
+    FROM book
+    JOIN book_inventory ON book_inventory.isbn = book.isbn
+    JOIN bookshelf ON book_inventory.bookshelf_id = bookshelf.bookshelf_id
     JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
     JOIN library ON bookcase.library_id = library.library_id
-    WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
+    WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system AND book.title = booktitle_p)
   ),
   num_copies_exist AS(
     SELECT all_copies.library_id, count(*) as num_copies_at_library
@@ -350,9 +356,9 @@ BEGIN
   num_holds AS(
     SELECT
       all_copies.library_id,
-      COUNT(holds.book_id) AS number_holds
+      COUNT(holds.isbn) AS number_holds
     FROM all_copies
-    LEFT OUTER JOIN holds ON all_copies.book_id = holds.book_id
+    LEFT OUTER JOIN holds ON all_copies.isbn = holds.isbn
     GROUP BY all_copies.library_id
   ),
   combined_table AS (
@@ -407,16 +413,16 @@ BEGIN
   DECLARE book_copy_avail INT;
   SET book_copy_avail = (
     WITH avail_book_in_sys as (
-      SELECT reduced_book.*
-      -- to reduce # joins/cross-products, reduce size (by getting relevant titles) before joins
-      FROM (SELECT * FROM book WHERE book.title = book_title_p) reduced_book
-      JOIN bookshelf on bookshelf.bookshelf_id = reduced_book.bookshelf_id
+      SELECT book_inventory.* FROM book 
+      JOIN book_inventory ON book_inventory.isbn = book.isbn
+      JOIN bookshelf on bookshelf.bookshelf_id = book_inventory.bookshelf_id
       JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
       JOIN library on library.library_id = bookcase.library_id
-      WHERE 
+      WHERE
+        book.title = book_title_p AND
         library.library_system = lib_sys_id_p AND 
         library.library_id = lib_id_p AND
-        reduced_book.book_id NOT IN (SELECT book_id FROM checked_out_books)
+        book_inventory.book_id NOT IN (SELECT book_id FROM checked_out_books)
       LIMIT 1
     )
     SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.book_id ELSE -1 END)
@@ -451,7 +457,8 @@ BEGIN
     books_in_lib_sys AS (
         SELECT lib_book_shelves.*, book.title AS book_title, book.author, COUNT(book.title) AS num_copies_at_library
         FROM lib_book_shelves
-        JOIN book ON lib_book_shelves.bookshelf_id = book.bookshelf_id
+        JOIN book_inventory ON lib_book_shelves.bookshelf_id = book_inventory.bookshelf_id
+        JOIN book ON book.isbn = book_inventory.isbn
         -- Get the number of copies of EACH book at EACH library
         GROUP BY lib_book_shelves.library_name, book.title
     )
@@ -500,7 +507,7 @@ CREATE PROCEDURE checkout_book(
   END IF;
 
   SET checkout_length_days = (
-    SELECT book.checkout_length_days FROM book 
+    SELECT book_inventory.checkout_length_days FROM book_inventory 
     WHERE book_id = avail_book_id
   );
 
@@ -526,11 +533,17 @@ DELIMITER ;
 -- will put a hold on the copy of the book that has been checked out the longest
 DELIMITER $$
 CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
-BEGIN 
+BEGIN
+  -- get isbn from title
+  DECLARE book_isbn VARCHAR(17);
+  
+  SET book_isbn = (
+    SELECT isbn FROM book WHERE title_p = title
+  );
 
 -- make a hold with that book and user date
-INSERT INTO holds (hold_id, book_title, user_id,   hold_start_date)
-VALUES            (DEFAULT, title_p,    user_id_p, NOW());
+INSERT INTO holds (hold_id, isbn,      user_id,   hold_start_date)
+VALUES            (DEFAULT, book_isbn, user_id_p, NOW());
 
 END $$
 -- resets the DELIMETER
@@ -792,7 +805,7 @@ BEGIN
     VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, in_num_pages, in_book_dewey);
   END IF;  
   
-  INSERT INTO book_inventory (book_id, book_isbn, bookshelf_id, checkout_length_days, late_fee_per_day)
+  INSERT INTO book_inventory (book_id, isbn, bookshelf_id, checkout_length_days, late_fee_per_day)
   VALUES(DEFAULT, in_isbn, placement_bookshelf_id, in_checkout_length_days, in_late_fee_per_day);
 END $$
 -- resets the DELIMETER
