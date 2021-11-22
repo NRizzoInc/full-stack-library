@@ -284,17 +284,33 @@ class DB_Manager():
             print(f"Failed to get lib card num by username: {err}")
             return None
 
-    def checkout_book(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> int:
-        """Returns: 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure"""
+    def checkout_book(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> dict:
+        """Checkout a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns:
+            dict: {
+                rtncode: 1 (success), -1 (no copies available), else failure
+                due_date: Optional[datetime]
+            }
+        """
+        
         try:
             # returns 1 on success
             self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
                                 (user_id, book_title, lib_sys_id, lib_id))
             # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
             # print(self.cursor._last_executed)
-            res = self.cursor.fetchone()
-            res_val = list(res.values())[0]
-            return res_val
+            res_dict = self.cursor.fetchone()
+            return res_dict
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 

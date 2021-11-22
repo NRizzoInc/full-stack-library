@@ -143,22 +143,20 @@ class WebApp(UserManager):
         def handleCheckout(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
             # checkout book w/ error check
             try:
-                checkout_res = self.checkout_book(user_id, book_title, lib_sys_id, lib_id)
+                checkout_res_dict = self.checkout_book(user_id, book_title, lib_sys_id, lib_id)
             except Exception as err:
                 print(f"Failed to checkout book err: {err}")
 
-            if(checkout_res != 1):
+            if(checkout_res_dict["rtncode"] != 1):
                 flash(f"Failed to checkout book!", "is-danger")
-                if checkout_res == -1:
+                if checkout_res_dict["rtncode"] == -1:
                     flash("No more copies available.", "is-danger")
-                elif checkout_res == -2:
-                    flash("This book was already checked out.", "is-danger")
                 return redirect(url_for("index"))
             
             # TODO: have due_date be part of procedure results
             # TODO: have success_status include number of people ahead of them on hold
             flash("Successfully checked out: " + str(book_title), "is-success")
-            flash("Due Date: TODO IMPLEMENT DUE DATE", "is-info")
+            flash("Due Date: " + str(checkout_res_dict["due_date"]), "is-info")
             return redirect(url_for("index"))
 
         def handleHold(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):

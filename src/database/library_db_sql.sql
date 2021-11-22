@@ -216,10 +216,10 @@ CREATE TABLE checked_out_books
  book_id INT NOT NULL,
  -- date book is checked out
  checkout_date DATETIME NOT NULL,
- 
+ -- date when book is due
  -- The due date is found by adding the checkout length from book to checkout_date
- 
- -- to the date checked out
+ due_date DATETIME NOT NULL,
+
   CONSTRAINT FK_checked_out_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
@@ -483,35 +483,35 @@ CREATE PROCEDURE checkout_book(
   BEGIN
     SHOW ERRORS;
     ROLLBACK;
-    SELECT 0;
+    SELECT 0 as "rtncode", null as "due_date";
   END;
 
   -- function return -1 if no coopies of the book can be checked out
   SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p);
   IF avail_book_id = -1 THEN
-    SELECT -1;
+    SELECT -1 as "rtncode", null as "due_date";
     LEAVE checkout_label;
   END IF;
 
- SET checkout_length_days = 
-   (SELECT checkout_length_days FROM book 
-    WHERE book_id = avail_book_id);
+  SET checkout_length_days = (
+    SELECT book.checkout_length_days FROM book 
+    WHERE book_id = avail_book_id
+  );
 
   SET checkout_datetime = NOW();
-  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL 18 DAY));
---  SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY) INTO due_datetime;
+  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
 
   -- Adds the book to the check_out_books table
   START TRANSACTION; -- may need to rollback bc multiple inserts
-  INSERT INTO checked_out_books (user_id,   book_id,       checkout_date)
-  VALUES                        (user_id_p, avail_book_id, checkout_datetime);
+  INSERT INTO checked_out_books (user_id,   book_id,       checkout_date,     due_date)
+  VALUES                        (user_id_p, avail_book_id, checkout_datetime, due_datetime);
 
   -- Adding the checkout into the user_hist table
   INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
   VALUES                (DEFAULT, user_id_p, avail_book_id, lib_id_p,   checkout_datetime);
 
   -- TODO: in checkout return this info: bookcase_local_num & bookshelf_local_num
-  SELECT 1 as "rtn_code", due_datetime as "due_date";
+  SELECT 1 as "rtncode", due_datetime as "due_date";
   COMMIT;
 END $$
 DELIMITER ;
@@ -546,6 +546,10 @@ DELIMITER $$
 CREATE PROCEDURE return_book(IN book_id_p INT, IN user_id_p INT)
 BEGIN
 DECLARE book_library_id INT;
+DECLARE new_checkout_user_id INT;
+DECLARE checkout_length_days INT;
+DECLARE due_datetime DATE;
+
 -- A function to get the library_id for a specific book
 SELECT library_id_from_book(book_id_P) INTO book_library_id;
 
@@ -565,12 +569,17 @@ UPDATE user_hist
  
  -- Checks out the book for the next person on hold, if one exists 
  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
- IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
-     INSERT INTO checked_out_books 
-     VALUES ((SELECT user_id FROM holds 
-                WHERE (book_id_p = book_id) 
-                ORDER BY hold_start_date ASC LIMIT 1)
-            , book_id_p, now());
+IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
+  SET new_checkout_user_id = (
+    SELECT user_id FROM holds
+    WHERE (book_id_p = book_id)
+    ORDER BY hold_start_date ASC LIMIT 1
+  );
+  SET checkout_length_days  = (SELECT checkout_length_days FROM book WHERE book_id = book_id_p);
+  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
+
+  INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
+  VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
       
       -- Updates user_hist 
     INSERT INTO user_hist
