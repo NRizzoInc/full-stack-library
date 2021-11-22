@@ -12,7 +12,7 @@ import getpass
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
-from flask import Flask, templating, render_template, request, redirect, flash, url_for, jsonify
+from flask import Flask, session, render_template, request, redirect, flash, url_for, jsonify
 import werkzeug.serving # needed to make production worthy app that's secure
 
 # decorate app.route with "@login_required" to make sure user is logged in before doing anything
@@ -209,40 +209,46 @@ class WebApp(UserManager):
         def login():
             # dont login if already logged in
             if current_user.is_authenticated:
-                return redirect("/")
+                return redirect(url_for('index'))
 
             # to provide UserManager, use self which is a child of it
             form = LoginForm(self._app, self)
-            if not form.validate_on_submit():
+
+            if request.method == "GET":
+                return render_template('login.html', title="LibraryDB Login", form=form)
+            elif request.method == "POST" and not form.validate_on_submit():
                 # unsuccessful login
+                flash("Invalid Username or Password!", "is-danger")
                 return render_template('login.html', title="LibraryDB Login", form=form)
 
-            # username & pwd must be right at this point, so login
-            # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
-            # call loadUser() / @user_loader in userManager.py
-            user_id = self.getUserIdFromUsername(form.username.data)
-            lib_card_num = self.get_card_num_by_user_id(user_id)
-            user = User(user_id, lib_card_num)
-            login_user(user, remember=form.rememberMe.data)
+            elif request.method == "POST":
+                # username & pwd must be right at this point, so login
+                # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
+                # call loadUser() / @user_loader in userManager.py
+                user_id = self.getUserIdFromUsername(form.username.data)
+                lib_card_num = self.get_card_num_by_user_id(user_id)
+                user = User(user_id, lib_card_num)
+                login_user(user, remember=form.rememberMe.data)
 
-            # two seperate flashes for diff categories
-            flash("Successfully logged in!", "is-success")
-            flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
+                # two seperate flashes for diff categories
+                flash("Successfully logged in!", "is-success")
+                # format str safe bc not user input
+                flash(f"Library Card Number: {lib_card_num}", "is-info")
 
             # route to original destination
             next = flask.request.args.get('next')
             isNextUrlBad = next == None or not is_safe_url(next, self._urls)
             if isNextUrlBad:
-                return redirect("/")
+                return redirect(url_for('index'))
             else:
                 return redirect(next)
 
             # on error, keep trying to login until correct
-            return redirect("/login")
+            return redirect(url_for("login"))
 
         @self._app.route("/register", methods=["GET", "POST"])
         def register():
-            if current_user.is_authenticated: return redirect("/")
+            if current_user.is_authenticated: return redirect(url_for('index'))
             # make the form for both GET & POST (to show and parse respectively)
             lib_systems_dict = self.get_all_library_systems()
             # Convert sys_id:sys_name -> (sys_id, sys_name)
@@ -295,7 +301,7 @@ class WebApp(UserManager):
             if request.method == "POST" and form.validate_on_submit():
                 # actually change a user's login given info is valid/allowed
                 self.updatePwd(form.username.data, form.new_password.data)
-                return redirect("/")
+                return redirect(url_for('index'))
             elif request.method == "POST":
                 print("Forgot Password Reset Failed")
 
@@ -307,7 +313,7 @@ class WebApp(UserManager):
         def logout():
             logout_user()
             flash("Successfully logged out!", "is-success")
-            return redirect("/login")
+            return redirect(url_for("login"))
 
     def printSites(self):
         print("Existing URLs:")
