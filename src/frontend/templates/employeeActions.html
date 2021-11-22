@@ -28,17 +28,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ add_new_book_form.isbn.label(class="label") }}
-                        {{ add_new_book_form.isbn(class="input is-medium", placeholder="Book Title") }}
-                        {% for error in add_new_book_form.isbn.errors %}
-                        <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="field">
-                    <div class="control">
                         {{ add_new_book_form.author.label(class="label") }}
-                        {{ add_new_book_form.author(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.author(class="input is-medium", placeholder="Author") }}
                         {% for error in add_new_book_form.isbn.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -47,7 +38,7 @@
                 <div class="field">
                     <div class="control">
                         {{ add_new_book_form.publisher.label(class="label") }}
-                        {{ add_new_book_form.publisher(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.publisher(class="input is-medium", placeholder="Publisher") }}
                         {% for error in add_new_book_form.publisher.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -55,8 +46,8 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        {{ add_new_book_form.is_audio_book.label(class="label") }}
-                        {{ add_new_book_form.is_audio_book(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.is_audio_book.label(class="checkbox has-text-weight-bold") }}
+                        {{ add_new_book_form.is_audio_book(class="checkbox") }}
                         {% for error in add_new_book_form.is_audio_book.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -64,8 +55,17 @@
                 </div>
                 <div class="field">
                     <div class="control">
+                        {{ add_new_book_form.isbn.label(class="label") }}
+                        {{ add_new_book_form.isbn(class="input is-medium", placeholder="ISBN") }}
+                        {% for error in add_new_book_form.isbn.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
                         {{ add_new_book_form.num_pages.label(class="label") }}
-                        {{ add_new_book_form.num_pages(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.num_pages(class="input is-medium", placeholder="#") }}
                         {% for error in add_new_book_form.num_pages.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -74,7 +74,7 @@
                 <div class="field">
                     <div class="control">
                         {{ add_new_book_form.checkout_length_days.label(class="label") }}
-                        {{ add_new_book_form.checkout_length_days(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.checkout_length_days(class="input is-medium", placeholder="Days") }}
                         {% for error in add_new_book_form.checkout_length_days.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -83,7 +83,7 @@
                 <div class="field">
                     <div class="control">
                         {{ add_new_book_form.late_fee_per_day.label(class="label") }}
-                        {{ add_new_book_form.late_fee_per_day(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.late_fee_per_day(class="input is-medium", placeholder="$") }}
                         {% for error in add_new_book_form.late_fee_per_day.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
@@ -92,14 +92,14 @@
                 <div class="field">
                     <div class="control">
                         {{ add_new_book_form.book_dewey.label(class="label") }}
-                        {{ add_new_book_form.book_dewey(class="input is-medium", placeholder="Book Title") }}
+                        {{ add_new_book_form.book_dewey(class="input is-medium", placeholder="###.## or ###") }}
                         {% for error in add_new_book_form.book_dewey.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
                     </div>
                 </div>
                 <p>{{ add_new_book_form.submit(class="button is-block is-info is-large is-fullwidth") }}</p>
-            </add_new_book_form>
+            </form>
         </div>
     </div>
     {% endblock %}

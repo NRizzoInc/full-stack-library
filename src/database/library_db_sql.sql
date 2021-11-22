@@ -1,10 +1,10 @@
--- Project Code 
--- Last Updated: 2021/11/17 
+-- Project Code
+-- Last Updated: 2021/11/17
 
 DROP DATABASE IF EXISTS libsystem;
 
 CREATE DATABASE IF NOT EXISTS libSystem;
-USE libSystem; 
+USE libSystem;
 
 DROP TABLE IF EXISTS library_system;
 -- The library system (such as all libraries in 1 city)
@@ -12,7 +12,7 @@ CREATE TABLE library_system
  (
     library_sys_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     library_sys_name VARCHAR(100)
- ); 
+ );
 
 DROP TABLE IF EXISTS library;
  -- Represents a library branch in the system
@@ -28,13 +28,13 @@ DROP TABLE IF EXISTS library;
   -- how many books can an individual check out of THIS branch at one time
   -- The default is 1 book per user
   max_concurrently_borrowed INT NOT NULL DEFAULT 1,
-  
+
   -- What library system does this branch belong to
   CONSTRAINT FK_lib_system
         FOREIGN KEY (library_system) REFERENCES library_system(library_sys_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT
  );
- 
+
 
 -- matches lib_card_id to pregenerated UNIQUE card numbers
 DROP TABLE IF EXISTS lib_cards;
@@ -46,7 +46,7 @@ CREATE TABLE lib_cards
   lib_card_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
   lib_card_num INT NOT NULL UNIQUE
 );
- 
+
  DROP TABLE IF EXISTS lib_user;
 -- A user in the library system
 CREATE TABLE lib_user
@@ -66,7 +66,7 @@ CREATE TABLE lib_user
  num_borrowed INT,
  -- is this user an account of an employee?
  is_employee boolean DEFAULT FALSE,
- 
+
  -- username used to login
  username VARCHAR(50) NOT NULL UNIQUE,
  -- password used to login
@@ -81,23 +81,23 @@ CREATE TABLE employee
     employee_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     hire_date DATE,
     salary FLOAT,
-    job_role VARCHAR(200),  
-    
+    job_role VARCHAR(200),
+
     -- The user account of the employee
     user_id INT,
      CONSTRAINT FK_employee_user
         FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
         ON UPDATE CASCADE ON DELETE CASCADE,
-   
+
     -- The ID of the library where this employee works
    library_id INT,
      CONSTRAINT FK_employee_lib
         FOREIGN KEY (library_id) REFERENCES library(library_id)
         ON UPDATE CASCADE ON DELETE CASCADE
  );
- 
 
- 
+
+
  DROP TABLE IF EXISTS bookcase;
  -- Represents an entire bookcase, with bookshelfs, in a library branch
  CREATE TABLE bookcase
@@ -108,16 +108,16 @@ CREATE TABLE employee
   -- The min and max dewey decimal number on this shelf
   dewey_max FLOAT NOT NULL,
   dewey_min FLOAT NOT NULL,
-  
+
   -- What library is this bookcase in?
   library_id INT,
      CONSTRAINT FK_bookcase_lib
         FOREIGN KEY (library_id) REFERENCES library(library_id)
         ON UPDATE CASCADE ON DELETE CASCADE
-  
+
  );
- 
- 
+
+
   DROP TABLE IF EXISTS bookshelf;
  -- Represents a bookshelf in a library branch
  CREATE TABLE bookshelf
@@ -128,12 +128,12 @@ CREATE TABLE employee
   dewey_min FLOAT NOT NULL,
   -- the local id used to find where a shelf is in a branch
   bookshelf_local_num INT,
-  
+
   -- What bookcase is this shelf on
   bookcase_id INT,
     CONSTRAINT FK_bookshelf_bookcase
         FOREIGN KEY (bookcase_id) REFERENCES bookcase(bookcase_id)
-        ON UPDATE CASCADE ON DELETE CASCADE        
+        ON UPDATE CASCADE ON DELETE CASCADE
  );
 
 DROP TABLE IF EXISTS book;
@@ -198,11 +198,11 @@ CREATE TABLE holds
   CONSTRAINT FK_hold_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-    
+
   CONSTRAINT FK_hold_lib_sys
     FOREIGN KEY (lib_sys_id) REFERENCES library_system(library_sys_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-  
+
   CONSTRAINT FK_hold_lib
     FOREIGN KEY (library_id) REFERENCES library(library_id)
     ON UPDATE CASCADE ON DELETE CASCADE
@@ -216,14 +216,14 @@ CREATE TABLE user_register
 (
  user_id INT NOT NULL,
  library_id INT NOT NULL,
-    
+
  CONSTRAINT FK_register_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-    
+
  CONSTRAINT FK_register_library
     FOREIGN KEY (library_id) REFERENCES library(library_id)
-    ON UPDATE CASCADE ON DELETE CASCADE 
+    ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 
@@ -244,10 +244,10 @@ CREATE TABLE checked_out_books
   CONSTRAINT FK_checked_out_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-    
+
  CONSTRAINT FK_checked_out_book
     FOREIGN KEY (book_id) REFERENCES book_inventory(book_id)
-    ON UPDATE CASCADE ON DELETE CASCADE 
+    ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 DROP TABLE IF EXISTS user_hist;
@@ -264,18 +264,18 @@ CREATE TABLE user_hist
  date_borrowed DATETIME NOT NULL,
  date_returned DATETIME DEFAULT NULL,
 
- 
+
  CONSTRAINT FK_hist_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
 
 CONSTRAINT FK_hist_book
     FOREIGN KEY (book_borrowed) REFERENCES book_inventory(book_id)
-    ON UPDATE CASCADE ON DELETE CASCADE,    
-   
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
 CONSTRAINT FK_hist_library
     FOREIGN KEY (library_id) REFERENCES library(library_id)
-    ON UPDATE CASCADE ON DELETE CASCADE 
+    ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 --
@@ -285,32 +285,32 @@ CONSTRAINT FK_hist_library
 -- Given a book_id, returns the library_id of where it is located
 DELIMITER $$
 CREATE FUNCTION library_id_from_book(book_id_p INT)
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
-BEGIN 
+BEGIN
  DECLARE library_id_out INT;
  WITH desired_book AS(
-   SELECT * FROM book 
+   SELECT * FROM book
     WHERE (book_id = book_id_p)),
 
  -- joining the desired_book and bookcase_id from bookshelf table
   desired_book_bs AS (
-  SELECT title, desired_book.bookshelf_id, bookshelf.bookcase_id 
+  SELECT title, desired_book.bookshelf_id, bookshelf.bookcase_id
    FROM desired_book JOIN bookshelf
    USING (bookshelf_id)),
-   
+
    -- joining desired_book_bs and library_name/ library_id from library table
    desired_book_lib AS (
-   SELECT desired_book_bs.title, desired_book_bs.bookshelf_id, 
+   SELECT desired_book_bs.title, desired_book_bs.bookshelf_id,
             desired_book_bs.bookcase_id,
             library.library_name,
             library.library_id
     FROM desired_book_bs JOIN library
     USING (library_id))
-    
+
     SELECT library_id INTO library_id_out FROM desired_book_lib;
- 
+
  RETURN(library_id_out);
 END $$
 DELIMITER ;
@@ -333,7 +333,7 @@ BEGIN
 -- This cannot be a function because a table is returned
  DECLARE derived_isbn VARCHAR(17);
  SET derived_isbn = (SELECT isbn FROM book WHERE title = booktitle_p LIMIT 1);
- 
+
  WITH
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
@@ -371,7 +371,7 @@ BEGIN
   relevant_holds AS (
     SELECT all_copies.*, holds.hold_id, holds.user_id
     FROM all_copies
-    LEFT JOIN holds ON holds.library_id = all_copies.library_id -- AND holds.isbn = all_copies.isbn 
+    LEFT JOIN holds ON holds.library_id = all_copies.library_id -- AND holds.isbn = all_copies.isbn
     WHERE holds.isbn = derived_isbn
     -- multiple users at one library can have the "same" hold
     GROUP BY holds.library_id, holds.user_id
@@ -436,14 +436,14 @@ BEGIN
   DECLARE book_copy_avail INT;
   SET book_copy_avail = (
     WITH avail_book_in_sys as (
-      SELECT book_inventory.* FROM book 
+      SELECT book_inventory.* FROM book
       JOIN book_inventory ON book_inventory.isbn = book.isbn
       JOIN bookshelf on bookshelf.bookshelf_id = book_inventory.bookshelf_id
       JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
       JOIN library on library.library_id = bookcase.library_id
       WHERE
         book.title = book_title_p AND
-        library.library_system = lib_sys_id_p AND 
+        library.library_system = lib_sys_id_p AND
         library.library_id = lib_id_p AND
         book_inventory.book_id NOT IN (SELECT book_id FROM checked_out_books)
       LIMIT 1
@@ -485,17 +485,17 @@ BEGIN
         -- Get the number of copies of EACH book at EACH library
         GROUP BY lib_book_shelves.library_name, book.title
     )
-    
+
     SELECT library_name, book_title, author,  num_copies_at_library
         FROM books_in_lib_sys
         ORDER BY book_title ASC;
-  
+
 END $$
 -- resets the DELIMETER
 DELIMITER ;
 
 -- checking out a book given a book_id and user_id
--- Adds the book to the "checked out book" table, 
+-- Adds the book to the "checked out book" table,
 -- returns the due date
 -- Adds book to the user's history
 DROP PROCEDURE IF EXISTS checkout_book;
@@ -515,7 +515,7 @@ CREATE PROCEDURE checkout_book(
   DECLARE avail_book_id INT;
 
   -- use transaction bc multiple inserts and should rollback on error
-  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
     SHOW ERRORS;
     ROLLBACK;
@@ -530,7 +530,7 @@ CREATE PROCEDURE checkout_book(
   END IF;
 
   SET checkout_length_days = (
-    SELECT book_inventory.checkout_length_days FROM book_inventory 
+    SELECT book_inventory.checkout_length_days FROM book_inventory
     WHERE book_id = avail_book_id
   );
 
@@ -609,17 +609,17 @@ SELECT library_id_from_book(book_id_P) INTO book_library_id;
  -- Adds the return date to the user_Hist
 UPDATE user_hist
  SET date_returned = now()
- WHERE ((user_id_p = user_id) AND 
+ WHERE ((user_id_p = user_id) AND
         (book_id_p = book_id));
- 
+
  -- Delete row from checked_out_Books
- DELETE FROM checked_out_books 
-  WHERE ((user_id_p = user_id) AND 
+ DELETE FROM checked_out_books
+  WHERE ((user_id_p = user_id) AND
         (book_id_p = book_id));
  -- TODO how to handle a user who has placed a hold on the book being checked in
- -- SELECT * FROM holds WHERE (book_id_p = 
- 
- -- Checks out the book for the next person on hold, if one exists 
+ -- SELECT * FROM holds WHERE (book_id_p =
+
+ -- Checks out the book for the next person on hold, if one exists
  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
 IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
   SET new_checkout_user_id = (
@@ -632,16 +632,16 @@ IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
 
   INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
   VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
-      
-      -- Updates user_hist 
+
+      -- Updates user_hist
     INSERT INTO user_hist
-    VALUES (DEFAULT, 
-            (SELECT user_id FROM holds 
-                WHERE (book_id_p = book_id) 
+    VALUES (DEFAULT,
+            (SELECT user_id FROM holds
+                WHERE (book_id_p = book_id)
                 ORDER BY hold_start_date ASC LIMIT 1)
             , book_id_p, book_library_id
     , now(), null);
-  
+
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
  END IF;
@@ -660,7 +660,7 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
--- Given a username, gets their password. 
+-- Given a username, gets their password.
 -- Used to check if login is valid
 DELIMITER $$
 CREATE PROCEDURE get_user_pass(IN username_p VARCHAR(50))
@@ -675,8 +675,8 @@ DELIMITER ;
 -- Given a username, grabs user_id
 DELIMITER $$
 CREATE FUNCTION get_user_id(username_p VARCHAR(50))
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE found_user_id INT;
@@ -719,7 +719,7 @@ CREATE PROCEDURE insert_user(
   DECLARE new_lib_card_num INT;
   DECLARE new_lib_card_id INT;
   -- in case insert into lib_user fails, start a transaction that can rollback other insertions
-  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
       ROLLBACK;
   END;
@@ -742,7 +742,7 @@ CREATE PROCEDURE insert_user(
   -- hash the password with MD5 & only ever do checks on the hash (no plaintext passwords)
   VALUES(DEFAULT, new_lib_card_id, fname, lname, dob, 0, is_employee, username, MD5(pwd));
   SET new_user_id = LAST_INSERT_ID();
-  
+
   -- insert into user_register
   INSERT INTO user_register (user_id, library_id) VALUES(new_user_id, in_library_id);
   COMMIT;
@@ -763,7 +763,7 @@ CREATE PROCEDURE insert_employee(
   IN in_library_id INT
 ) BEGIN
   -- in case insert into lib_user fails, start a transaction that can rollback other insertions
-  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
       ROLLBACK;
   END;
@@ -773,7 +773,7 @@ CREATE PROCEDURE insert_employee(
   INSERT INTO employee (employee_id, hire_date, salary, job_role, user_id, library_id)
   -- employee_id is auto increment, so specify default behavior
   VALUES(DEFAULT, in_hire_date, in_salary, in_job_role, in_user_id, in_library_id);
-  
+
   COMMIT;
 
 END $$
@@ -787,7 +787,7 @@ BEGIN
   SET does_user_card_match = (
     SELECT COUNT(*) > 0
     FROM (
-      SELECT 
+      SELECT
           lib_user.lib_card_id
       FROM lib_user
       JOIN lib_cards on lib_cards.lib_card_id = lib_user.lib_card_id
@@ -831,21 +831,21 @@ BEGIN
     DECLARE shelf_id_for_dewey INT;
     -- Get the bookcase in the library that fits the dewey number
     SELECT bookcase_id INTO correct_case_id
-        FROM bookcase 
-        WHERE library_id = in_lib_id 
-            AND in_dewey_num >= dewey_min 
+        FROM bookcase
+        WHERE library_id = in_lib_id
+            AND in_dewey_num >= dewey_min
             AND in_dewey_num <= dewey_max;
-                
+
     -- Get the specific shelf within that case that works for the given dewey number
     SELECT bookshelf_id INTO shelf_id_for_dewey
         FROM bookshelf
         WHERE bookcase_id = correct_case_id
-            AND in_dewey_num >= dewey_min 
+            AND in_dewey_num >= dewey_min
             AND in_dewey_num <= dewey_max
         -- Put it in the lowest possible shelf
         ORDER BY bookcase_id ASC
         LIMIT 1;
-    
+
     return (shelf_id_for_dewey);
 END //
 
@@ -862,23 +862,32 @@ CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
     IN in_checkout_length_days INT,
     IN in_book_dewey FLOAT,
     IN in_late_fee_per_day FLOAT)
+
 BEGIN
+
   DECLARE placement_bookshelf_id INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+  START TRANSACTION;
   -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
-  -- NOTE: in a lot of cases the Dewey Number is an estimate. 
+  -- NOTE: in a lot of cases the Dewey Number is an estimate.
   -- Real data domain experts would be needed to provide the exact dewey numbers
-  -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
+  -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification
   -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
   SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
-  
+
   -- check if book is already in master list, if not then have to add
   IF NOT EXISTS (SELECT 1 FROM book WHERE in_isbn = book.isbn) THEN
     INSERT INTO book (isbn, title, author, publisher, is_audio_book, num_pages, book_dewey)
     VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, in_num_pages, in_book_dewey);
-  END IF;  
-  
+  END IF;
+
   INSERT INTO book_inventory (book_id, isbn, bookshelf_id, checkout_length_days, late_fee_per_day)
   VALUES(DEFAULT, in_isbn, placement_bookshelf_id, in_checkout_length_days, in_late_fee_per_day);
+
+  COMMIT;
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -897,7 +906,7 @@ BEGIN
         FROM bookcase
         WHERE library_id = in_library_id
         );
-    
+
     -- insert the new book case
     INSERT INTO bookcase (bookcase_local_num, dewey_max, dewey_min, library_id)
         VALUES (next_bookcase_local_num, in_dewey_max, in_dewey_min, in_library_id);
@@ -914,14 +923,14 @@ BEGIN
     -- Get the current highest bookshelf number for the library - use the next value
     DECLARE next_bookshelf_local_num INT;
     DECLARE referenced_bookcase_id INT;
-    
+
     SET next_bookshelf_local_num = (
-        -- If a library doesnt have any bookshelves, max is null. 
+        -- If a library doesnt have any bookshelves, max is null.
         -- This will have the result be a 0 instead of NULL.
         SELECT COALESCE(MAX(get_shelfs_in_lib.bookshelf_local_num) + 1, 1)
         -- Get the shelfs in the library
         FROM (
-            SELECT bookshelf.* FROM 
+            SELECT bookshelf.* FROM
             -- Get the bookcase(s) this shelf could belong to
             (
                 SELECT bookcase_id FROM bookcase WHERE library_id = in_library_id
@@ -939,16 +948,16 @@ BEGIN
         SELECT getBookcasesID.bookcase_id
         FROM (
         -- Get the bookcase(s) this shelf could belong to in the library
-            SELECT bookcase_id, dewey_min, dewey_max 
-            FROM bookcase 
-            WHERE library_id = in_library_id 
-                AND in_dewey_min >= dewey_min 
+            SELECT bookcase_id, dewey_min, dewey_max
+            FROM bookcase
+            WHERE library_id = in_library_id
+                AND in_dewey_min >= dewey_min
                 AND in_dewey_max <= dewey_max
         ORDER BY bookcase.bookcase_id DESC
         LIMIT 1
         ) getBookcasesID
     );
-    
+
     -- insert the new bookshelf
     INSERT INTO bookshelf (dewey_max, dewey_min, bookshelf_local_num, bookcase_id)
         VALUES (in_dewey_max, in_dewey_min, next_bookshelf_local_num, referenced_bookcase_id);
@@ -965,7 +974,7 @@ CREATE PROCEDURE add_library(IN in_library_system_name VARCHAR(100),
     IN in_end_time_of_operation time,
     IN in_max_concurrently_borrowed INT)
 BEGIN
-    -- Get the id of the library system that this new library belongs to 
+    -- Get the id of the library system that this new library belongs to
     DECLARE var_library_sys_id INT;
     SET var_library_sys_id = (
          SELECT library_sys_id
@@ -973,15 +982,15 @@ BEGIN
             WHERE library_sys_name = in_library_system_name
             LIMIT 1
         );
-    
+
     -- Insert the given values into the table
-     INSERT INTO library (library_system, 
-            library_name, 
+     INSERT INTO library (library_system,
+            library_name,
             address,
-            start_time_of_operation, 
-            end_time_of_operation, 
+            start_time_of_operation,
+            end_time_of_operation,
             max_concurrently_borrowed)
-     VALUES (var_library_sys_id, in_library_name, in_address, in_start_time_of_operation, 
+     VALUES (var_library_sys_id, in_library_name, in_address, in_start_time_of_operation,
         in_end_time_of_operation, in_max_concurrently_borrowed);
 END $$
 -- resets the DELIMETER
@@ -989,19 +998,19 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_users_lib_id(in_user_id INT)
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE library_id_out INT;
     -- GIVEN: a user's id, return the id of the library they belong to
-  
+
   -- The backend side will have the user's id,
   -- so this procedure makes it very easy to get the library they belong to
   SELECT library_id INTO library_id_out
     FROM user_register
     WHERE in_user_id = user_id;
-    
+
     RETURN(library_id_out);
 END $$
 -- resets the DELIMETER
@@ -1009,19 +1018,19 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_id_from_name(in_lib_name VARCHAR(100), in_lib_sys_name VARCHAR(100))
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE library_id_out INT;
     -- GIVEN: a user's id, return the id of the library they belong to
-  
+
   -- The backend side will have the user's id,
   -- so this procedure makes it very easy to get the library they belong to
   SELECT library_id INTO library_id_out
     FROM library
     WHERE library_name = in_lib_name /*AND in_lib_sys_name = library_system*/;
-    
+
     RETURN(library_id_out);
 END $$
 -- resets the DELIMETER
@@ -1048,10 +1057,10 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE get_all_libs_in_system(IN in_lib_sys_id INT)
 BEGIN
-  
+
   -- Needed for validation of register. Can't be function because multiple rows returned
   SELECT library_id, library_name
-    FROM library 
+    FROM library
     WHERE library_system = in_lib_sys_id
     ORDER BY library_name ASC;
 END $$
@@ -1060,20 +1069,20 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION is_lib_in_sys(in_lib_id INT, in_lib_sys_id INT)
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS BOOL
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE ret BOOL;
     -- GIVEN a library name and system, return 1 if the library is in the system
     -- If a match is found, the count is 1 and ret = 1
-    SELECT COUNT(*)>0 INTO ret 
+    SELECT COUNT(*)>0 INTO ret
         FROM library
-        WHERE 
-            in_lib_id = library_id 
-            AND 
+        WHERE
+            in_lib_id = library_id
+            AND
             in_lib_sys_id = library_system;
-    
+
     RETURN(ret);
 END $$
 -- resets the DELIMETER
@@ -1081,17 +1090,17 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION is_a_lib_sys(in_lib_sys_id INT)
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS BOOL
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE ret BOOL;
     -- GIVEN a library system name, return 1 if it exists
     -- If a match is found, the count is 1 and ret = 1
-    SELECT COUNT(*)>0 INTO ret 
+    SELECT COUNT(*)>0 INTO ret
         FROM library_system
         WHERE in_lib_sys_id = library_system.library_sys_id;
-    
+
     RETURN(ret);
 END $$
 -- resets the DELIMETER
@@ -1099,15 +1108,15 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_name_from_id(in_lib_id INT)
- RETURNS VARCHAR(100) 
- DETERMINISTIC 
+ RETURNS VARCHAR(100)
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE ret VARCHAR(100) ;
-    SELECT library_name INTO ret 
+    SELECT library_name INTO ret
         FROM library
         WHERE in_lib_id = library.library_id;
-    
+
     RETURN(ret);
 END $$
 -- resets the DELIMETER
@@ -1115,15 +1124,15 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_name_from_id(in_lib_sys_id INT)
- RETURNS VARCHAR(100) 
- DETERMINISTIC 
+ RETURNS VARCHAR(100)
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE ret VARCHAR(100) ;
-    SELECT library_sys_name INTO ret 
+    SELECT library_sys_name INTO ret
         FROM library_system
         WHERE in_lib_sys_id = library_system.library_sys_id;
-    
+
     RETURN(ret);
 END $$
 
@@ -1134,7 +1143,7 @@ CREATE FUNCTION get_lib_sys_id_from_user_id(in_user_id INT)
  READS SQL DATA
 BEGIN
     DECLARE lib_sys_id INT;
-    -- GIVEN a user's id, returns the id of the library system 
+    -- GIVEN a user's id, returns the id of the library system
     SELECT library_system INTO lib_sys_id
         FROM library
         WHERE library_id = (
@@ -1143,7 +1152,7 @@ BEGIN
             WHERE user_id = in_user_id
             LIMIT 1
         );
-    
+
     RETURN(lib_sys_id);
 END $$
 -- resets the DELIMETER
@@ -1152,8 +1161,8 @@ DELIMITER ;
 DROP FUNCTION IF EXISTS get_card_num_by_user_id;
 DELIMITER $$
 CREATE FUNCTION get_card_num_by_user_id(user_id_p INT)
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
  DECLARE lib_card_num_out INT;
@@ -1164,7 +1173,7 @@ BEGIN
   JOIN lib_cards ON lib_user.lib_card_id = lib_cards.lib_card_id
   WHERE lib_user.user_id = user_id_p
   LIMIT 1;
-  
+
   RETURN(lib_card_num_out);
 END $$
 -- resets the DELIMETER
@@ -1173,8 +1182,8 @@ DELIMITER ;
 DROP FUNCTION IF EXISTS get_is_user_employee;
 DELIMITER $$
 CREATE FUNCTION get_is_user_employee(user_id_p INT)
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS BOOL
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
  DECLARE is_user_employee BOOL;
@@ -1185,7 +1194,7 @@ BEGIN
   FROM employee
   WHERE employee.user_id = user_id_p
   LIMIT 1;
-  
+
   RETURN(is_user_employee);
 END $$
 -- resets the DELIMETER
@@ -1198,7 +1207,7 @@ CREATE FUNCTION get_lib_sys_id_from_sys_name(in_lib_sys_name VARCHAR(100))
  READS SQL DATA
 BEGIN
     DECLARE lib_sys_id INT;
-    -- GIVEN a user's id, returns the id of the library system 
+    -- GIVEN a user's id, returns the id of the library system
     SELECT library_system INTO lib_sys_id
         FROM library
         WHERE library_id = (
@@ -1207,7 +1216,7 @@ BEGIN
             WHERE library_sys_name = in_lib_sys_name
             LIMIT 1
         );
-    
+
     RETURN(lib_sys_id);
 END $$
 -- resets the DELIMETER
@@ -1215,22 +1224,22 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_name_from_user_id(in_user_id INT)
- RETURNS VARCHAR(100) 
- DETERMINISTIC 
+ RETURNS VARCHAR(100)
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
     DECLARE user_lib_id INT;
     DECLARE found_lib_sys_id INT;
     DECLARE lib_sys_name VARCHAR(100);
-    -- GIVEN a user's id, returns the id of the library system 
+    -- GIVEN a user's id, returns the id of the library system
     -- SELECT library_system_name INTO lib_sys_name
     SET user_lib_id  = (SELECT library_id FROM user_register WHERE in_user_id = user_id);
     SET found_lib_sys_id = (SELECT library_system FROM library WHERE library_id = user_lib_id);
-    
+
     SELECT library_sys_name INTO lib_sys_name
         FROM library_system
         WHERE found_lib_sys_id = library_sys_id;
-    
+
     RETURN(lib_sys_name);
 END $$
 -- resets the DELIMETER
@@ -1239,8 +1248,8 @@ DELIMITER ;
 DROP FUNCTION IF EXISTS get_card_num_by_username;
 DELIMITER $$
 CREATE FUNCTION get_card_num_by_username(username_p VARCHAR(50))
- RETURNS INT 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
  DECLARE lib_card_num_out INT;
@@ -1249,9 +1258,9 @@ BEGIN
   INTO lib_card_num_out
   FROM lib_user
   JOIN lib_cards ON lib_user.lib_card_id = lib_cards.lib_card_id
-  WHERE lib_user.username = username_p 
+  WHERE lib_user.username = username_p
   LIMIT 1;
-  
+
   RETURN(lib_card_num_out);
 END $$
 -- resets the DELIMETER
@@ -1260,7 +1269,7 @@ DELIMITER ;
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####
--- many systems come from here https://mblc.state.ma.us/programs-and-support/library-networks/index.php 
+-- many systems come from here https://mblc.state.ma.us/programs-and-support/library-networks/index.php
 INSERT INTO library_system (library_sys_name) VALUES
     ("Metro Boston Library Network"),
     ("Old Colony Library Network"),
@@ -1289,7 +1298,7 @@ CALL add_library("Old Colony Library Network", "Kingston Public Library",
 CALL add_library("Minuteman Library Network", "Cambridge Public Library",
         "449 Broadway Cambridge, MA 02138", '10:00', '21:00', 4);
 
-        
+
 -- ##### ADD BOOKCASES AND BOOKSHELVES ####
 CALL add_bookcase(1, 000, 999);
 CALL add_bookshelf(1, 000, 499);
@@ -1333,9 +1342,9 @@ CALL insert_user(
   CURDATE(), true, "nickrizzo", "pwd"
 );
 -- Can do this because this is being done manually in order
-CALL insert_employee(CURDATE(), 60000, 
+CALL insert_employee(CURDATE(), 60000,
     "Manages the Charlestown library. Can add new books to the catalog.",
-    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- NOTE: both of these ONLY work because it is being done manually.
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 1 because nick rizzo is the first user
     -- 2nd is library id - 1 because it can be seen above
@@ -1346,12 +1355,12 @@ CALL insert_user(
   4, -- library_id = 4 (Plymouth Public Library - another system)
   CURDATE(), true, "mattrizzo", "pwd"
 );
-CALL insert_employee(CURDATE(), 55000, 
+CALL insert_employee(CURDATE(), 55000,
     "Manages the Plymouth Public library. Can add new books to the catalog.",
-    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- NOTE: both of these ONLY work because it is being done manually.
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 2nd user to be added
-    -- 2nd is library id 
+    -- 2nd is library id
     2, 4);
 
 CALL insert_user(
@@ -1360,14 +1369,14 @@ CALL insert_user(
   CURDATE(), true, "dompriv", "pwd"
 );
 
-CALL insert_employee(CURDATE(), 70000, 
+CALL insert_employee(CURDATE(), 70000,
     "Manages the Cambridge Public library. Can add new books to the catalog.",
-    -- NOTE: both of these ONLY work because it is being done manually. 
+    -- NOTE: both of these ONLY work because it is being done manually.
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 3rd user to be added
-    -- 2nd is library id 
+    -- 2nd is library id
     3, 6);
-  
+
 -- ##### ADD some BOOKS ####
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
@@ -1386,34 +1395,34 @@ CALL add_new_book("Moby Dick", 2, '9780425120231', 'Herman Melville', 'Berkley P
 -- Also put Moby Dick in another system to test the search results
 CALL add_new_book("Moby Dick", 6, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
     false, 704, 14, 812.54, .3);
-    
+
 -- Add at least 1 book to every library
-CALL add_new_book("The Institute", 2, 9781432870126, "Stephen King", "Scribner", 
+CALL add_new_book("The Institute", 2, 9781432870126, "Stephen King", "Scribner",
     false, 576, 14, 813.54, .5);
-CALL add_new_book("How to do nothing : resisting the attention economy", 3, 9781612197500, 
+CALL add_new_book("How to do nothing : resisting the attention economy", 3, 9781612197500,
     "Jenny Odell", "Melville House", false, 256, 20, 303.48, .05);
-CALL add_new_book("Majesty", 4, 9781984830227 , "Katharine McGee", "Random House", 
+CALL add_new_book("Majesty", 4, 9781984830227 , "Katharine McGee", "Random House",
     false, 448 , 7, 813.6, .20);
-CALL add_new_book("Pride and Prejudice", 5, 9781435171589, "Jane Austen", 
+CALL add_new_book("Pride and Prejudice", 5, 9781435171589, "Jane Austen",
     "Barnes & Noble Signature Classics Series", false, 384, 16, 823.7, .12);
-CALL add_new_book("Little Red Riding Hood", 5, 9780316013550, "	Brothers Grimm", 
+CALL add_new_book("Little Red Riding Hood", 5, 9780316013550, "	Brothers Grimm",
     "Little, Brown and Company", false, 34, 8, 398.2, .10);
-CALL add_new_book("A Modern Utopia", 6, 9780486808352 , "H. G. Wells", 
+CALL add_new_book("A Modern Utopia", 6, 9780486808352 , "H. G. Wells",
     "Chapman and Hall", false, 393, 14, 321.07, .1);
 
 -- Put at least 1 audio book in every library
 CALL add_new_book("American Republics: A Continental History of the United States, 1783-1850",
-    1, 9781324005797 , "Alan Taylor", 
-    "W. W. Norton & Company ", true, 544, 
+    1, 9781324005797 , "Alan Taylor",
+    "W. W. Norton & Company ", true, 544,
     12, 973.3, .15);
-CALL add_new_book("China Room", 2,  9780593298145 , "Sunjeev Sahota", 
+CALL add_new_book("China Room", 2,  9780593298145 , "Sunjeev Sahota",
     "Penguin Audio", true, 243, 7, 823.92, .2);
-CALL add_new_book("The Death of the Heart", 3,  9781705286647, "Elizabeth Bowen", 
+CALL add_new_book("The Death of the Heart", 3,  9781705286647, "Elizabeth Bowen",
     "Knopf", true, 445, 15, 823.912, .05);
 CALL add_new_book("Empire of Pain: The Secret History of the Sackler Dynasty", 4,
-    0385545681, "Patrick Radden Keefe", 
+    0385545681, "Patrick Radden Keefe",
     "Random House Audio", true, 535 , 14, 338.7, .03);
-CALL add_new_book("Exit", 5, 9781662065965, "Belinda Bauer", 
+CALL add_new_book("Exit", 5, 9781662065965, "Belinda Bauer",
     "Dreamscape Media, LLC", true, 336, 11, 823.92, .2);
 CALL add_new_book("The Man Who Died Twice: A Thursday Murder Club Mystery", 6,
     9780841993583, "Richard Osman", "Penguin Audio", true, 365, 14, 823.92, .06);
@@ -1422,10 +1431,10 @@ CALL add_new_book("The Man Who Died Twice: A Thursday Murder Club Mystery", 6,
 CALL add_new_book("Alice's Adventures in Wonderland", 3,
     9780977716173, "Lewis Carroll", "Macmillan", false, 176, 14, 823.8, .03);
 CALL add_new_book("American Gods", 3,
-    9783962190019, "Neil Gaiman", "William Morrow, Headline", false, 
+    9783962190019, "Neil Gaiman", "William Morrow, Headline", false,
     465, 14, 813.54, .09);
 CALL add_new_book("Death of a Salesman", 4,
-    9780140481341, "Arthur Miller", "Penguin Plays", false, 
+    9780140481341, "Arthur Miller", "Penguin Plays", false,
     139, 21, 812.52, .06);
 
 -- have test user checkout one copy of Moby Dick (2 available)

@@ -31,23 +31,29 @@ class AddBookForm(FlaskForm):
         cls.book_dewey = StringField('Dewey Decimal Number of Book', validators=[DataRequired(), self.validateTypeFloat])
 
     def validateTypeInt(self, form, field) -> bool:
+        print(f"field = {field.name}. data = {field.data}")
         errMsg = f"This field must be a whole number"
         try:
             int_convert = int(field.data)
-            if isinstance(int_convert, int):
-                return True
-            else:
-                raise ValidationError(message=errMsg) # prints under box
         except:
             raise ValidationError(message=errMsg) # prints under box
 
+        if isinstance(int_convert, int):
+            print("passed validation")
+            return True
+        else:
+            raise ValidationError(message=errMsg) # prints under box
+
     def validateTypeFloat(self, form, field) -> bool:
+        print(f"field = {field.name}. data = {field.data}")
         errMsg = f"This field must be a number. Do not include symbols or letters"
         try:
-            float_convert = int(field.data)
-            if isinstance(float_convert, float):
-                return True
-            else:
-                raise ValidationError(message=errMsg) # prints under box
+            float_convert = float(field.data)
         except:
+            raise ValidationError(message=errMsg) # prints under box
+
+        if isinstance(float_convert, float):
+            print("passed validation")
+            return True
+        else:
             raise ValidationError(message=errMsg) # prints under box
