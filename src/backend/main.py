@@ -357,7 +357,7 @@ class WebApp(UserManager):
 
             # Otherwise, validate the form
             add_book_form = AddBookForm(request.form)
-            if request.method == "POST" and form.validate_on_submit():
+            if request.method == "POST" and add_book_form.validate_on_submit():
                 user_id = current_user.id
                 library_id = self.get_lib_id_from_user_id(user_id)
                 library_name = self.get_lib_name_from_id(user_id)
