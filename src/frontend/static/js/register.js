@@ -1,12 +1,16 @@
 import { async_post_request, getTodayDate } from './utils.js'
 
 $(document).ready(async function() {
-    // Set default hire date to today for ease of use
-    $("#hire_date").val(getTodayDate());
-    set_employee_hidden_state();
+    if(window.location.pathname == "/register")
+    {
+        // Set default hire date to today for ease of use
+        $("#hire_date").val(getTodayDate());
+        set_employee_hidden_state();
 
-    await add_lib_sys_change_listener();
-    await add_is_employee_change_listener();
+        await add_lib_sys_change_listener();
+        await add_is_employee_change_listener();
+    }
+
 });
 
 /**
