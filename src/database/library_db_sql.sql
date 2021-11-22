@@ -135,37 +135,47 @@ CREATE TABLE employee
         FOREIGN KEY (bookcase_id) REFERENCES bookcase(bookcase_id)
         ON UPDATE CASCADE ON DELETE CASCADE        
  );
- 
- DROP TABLE IF EXISTS book;
+
+DROP TABLE IF EXISTS book;
  -- Represents a book in the library system
- CREATE TABLE book 
- (
-  book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  isbn VARCHAR(75) NOT NULL,
+CREATE TABLE book (
+  -- isbn is unique to each book (and is different between regular and audio books)
+  -- ISBN can be max of 17 numbers/chars (may be alphanumeric so cant use INT)
+  isbn VARCHAR(17) PRIMARY KEY NOT NULL,
   title VARCHAR(200) NOT NULL,
   author VARCHAR(100) NOT NULL,
   publisher VARCHAR(100),
   is_audio_book BOOL NOT NULL,
   num_pages INT,
-  checkout_length_days INT,
   -- the dewey decimal number of the book
-  book_dewey FLOAT NOT NULL,
+  book_dewey FLOAT NOT NULL
+);
+
+DROP TABLE IF EXISTS book_inventory;
+CREATE TABLE book_inventory (
+  book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  book_isbn VARCHAR(17) NOT NULL,
+  loaned_by INT,
+  bookshelf_id INT,
+  checkout_length_days INT,
   -- the late fee that accumulate every day past the due date
   late_fee_per_day FLOAT NOT NULL DEFAULT 0.5,
- 
- -- The employee ID of who loaned out this book
-  loaned_by INT,
-    CONSTRAINT FK_book_employee
-        FOREIGN KEY (loaned_by) REFERENCES employee(employee_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-        
-    -- What bookshelf is this book on
-    bookshelf_id INT,
-     CONSTRAINT FK_book_bookshelf
-            FOREIGN KEY (bookshelf_id) REFERENCES bookshelf(bookshelf_id)
-            ON UPDATE CASCADE ON DELETE CASCADE
- );
- 
+  -- The employee ID of who loaned out this book
+
+  CONSTRAINT fk_book_isbn
+    FOREIGN KEY (book_isbn) REFERENCES book(isbn)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  CONSTRAINT FK_book_employee
+    FOREIGN KEY (loaned_by) REFERENCES employee(employee_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  -- What bookshelf is this book on
+  CONSTRAINT FK_book_bookshelf
+    FOREIGN KEY (bookshelf_id) REFERENCES bookshelf(bookshelf_id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 -- Represents a hold on a book
 DROP TABLE IF EXISTS holds;
 CREATE TABLE holds
@@ -221,7 +231,7 @@ CREATE TABLE checked_out_books
     ON UPDATE CASCADE ON DELETE CASCADE,
     
  CONSTRAINT FK_checked_out_book
-    FOREIGN KEY (book_id) REFERENCES book(book_id)
+    FOREIGN KEY (book_id) REFERENCES book_inventory(book_id)
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
@@ -245,7 +255,7 @@ CREATE TABLE user_hist
     ON UPDATE CASCADE ON DELETE CASCADE,
 
 CONSTRAINT FK_hist_book
-    FOREIGN KEY (book_borrowed) REFERENCES book(book_id)
+    FOREIGN KEY (book_borrowed) REFERENCES book_inventory(book_id)
     ON UPDATE CASCADE ON DELETE CASCADE,    
    
 CONSTRAINT FK_hist_library
@@ -759,7 +769,7 @@ DELIMITER $$
 CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
     -- PRECONDITION: backend code uses get_users_lib_id to get their library_id BEFORE this procedure
     IN in_lib_id INT,
-    IN in_isbn VARCHAR(75),
+    IN in_isbn VARCHAR(17),
     IN in_author VARCHAR(100),
     IN in_publisher VARCHAR(100),
     IN in_is_audio_book BOOL,
@@ -768,18 +778,22 @@ CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
     IN in_book_dewey FLOAT,
     IN in_late_fee_per_day FLOAT)
 BEGIN
-    DECLARE placement_bookshelf_id INT;
-    -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
-    -- NOTE: in a lot of cases the Dewey Number is an estimate. 
-    -- Real data domain experts would be needed to provide the exact dewey numbers
-    -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
-    -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
-    SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
-    
-    INSERT INTO book (isbn, title, author, publisher, is_audio_book, 
-        num_pages, checkout_length_days, book_dewey, late_fee_per_day, bookshelf_id)
-    VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, 
-        in_num_pages, in_checkout_length_days, in_book_dewey, in_late_fee_per_day, placement_bookshelf_id);
+  DECLARE placement_bookshelf_id INT;
+  -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
+  -- NOTE: in a lot of cases the Dewey Number is an estimate. 
+  -- Real data domain experts would be needed to provide the exact dewey numbers
+  -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
+  -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
+  SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
+  
+  -- check if book is already in master list, if not then have to add
+  IF NOT EXISTS (SELECT 1 FROM book WHERE in_isbn = book.isbn) THEN
+    INSERT INTO book (isbn, title, author, publisher, is_audio_book, num_pages, book_dewey)
+    VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, in_num_pages, in_book_dewey);
+  END IF;  
+  
+  INSERT INTO book_inventory (book_id, book_isbn, bookshelf_id, checkout_length_days, late_fee_per_day)
+  VALUES(DEFAULT, in_isbn, placement_bookshelf_id, in_checkout_length_days, in_late_fee_per_day);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
