@@ -135,55 +135,76 @@ CREATE TABLE employee
         FOREIGN KEY (bookcase_id) REFERENCES bookcase(bookcase_id)
         ON UPDATE CASCADE ON DELETE CASCADE        
  );
- 
- DROP TABLE IF EXISTS book;
+
+DROP TABLE IF EXISTS book;
  -- Represents a book in the library system
- CREATE TABLE book 
- (
-  book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  isbn VARCHAR(75) NOT NULL,
+CREATE TABLE book (
+  -- isbn is unique to each book (and is different between regular and audio books)
+  -- ISBN can be max of 17 numbers/chars (may be alphanumeric so cant use INT)
+  isbn VARCHAR(17) PRIMARY KEY NOT NULL,
   title VARCHAR(200) NOT NULL,
   author VARCHAR(100) NOT NULL,
   publisher VARCHAR(100),
   is_audio_book BOOL NOT NULL,
   num_pages INT,
-  checkout_length_days INT,
   -- the dewey decimal number of the book
-  book_dewey FLOAT NOT NULL,
+  book_dewey FLOAT NOT NULL
+);
+
+DROP TABLE IF EXISTS book_inventory;
+CREATE TABLE book_inventory (
+  book_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  isbn VARCHAR(17) NOT NULL,
+  loaned_by INT,
+  bookshelf_id INT,
+  checkout_length_days INT,
   -- the late fee that accumulate every day past the due date
   late_fee_per_day FLOAT NOT NULL DEFAULT 0.5,
- 
- -- The employee ID of who loaned out this book
-  loaned_by INT,
-    CONSTRAINT FK_book_employee
-        FOREIGN KEY (loaned_by) REFERENCES employee(employee_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-        
-    -- What bookshelf is this book on
-    bookshelf_id INT,
-     CONSTRAINT FK_book_bookshelf
-            FOREIGN KEY (bookshelf_id) REFERENCES bookshelf(bookshelf_id)
-            ON UPDATE CASCADE ON DELETE CASCADE
- );
- 
+  -- The employee ID of who loaned out this book
+
+  CONSTRAINT fk_book_isbn
+    FOREIGN KEY (isbn) REFERENCES book(isbn)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  CONSTRAINT FK_book_employee
+    FOREIGN KEY (loaned_by) REFERENCES employee(employee_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  -- What bookshelf is this book on
+  CONSTRAINT FK_book_bookshelf
+    FOREIGN KEY (bookshelf_id) REFERENCES bookshelf(bookshelf_id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 -- Represents a hold on a book
 DROP TABLE IF EXISTS holds;
 CREATE TABLE holds
 (
- hold_id INT PRIMARY KEY NOT NULL,
- -- ID of book being put on hold
- book_id INT NOT NULL,
- -- ID of user who placed hold
- user_id INT NOT NULL,
- hold_start_date DATE NOT NULL,
- 
- -- The book on hold
- CONSTRAINT FK_hold_book
-    FOREIGN KEY (book_id) REFERENCES book(book_id)
+  hold_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+  -- title of book being put on hold
+  isbn VARCHAR(17) NOT NULL,
+  -- ID of user who placed hold
+  user_id INT NOT NULL,
+  lib_sys_id INT NOT NULL,
+  library_id INT NOT NULL,
+  hold_start_date DATETIME NOT NULL,
+
+  -- the isbn belonging to the book on hold
+  CONSTRAINT FK_hold_isbn
+    FOREIGN KEY (isbn) REFERENCES book(isbn)
     ON UPDATE CASCADE ON DELETE CASCADE,
--- The user placing the hold    
- CONSTRAINT FK_hold_user
+
+  -- The user placing the hold
+  CONSTRAINT FK_hold_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+    
+  CONSTRAINT FK_hold_lib_sys
+    FOREIGN KEY (lib_sys_id) REFERENCES library_system(library_sys_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  
+  CONSTRAINT FK_hold_lib
+    FOREIGN KEY (library_id) REFERENCES library(library_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -215,17 +236,17 @@ CREATE TABLE checked_out_books
  -- what book is checked out?
  book_id INT NOT NULL,
  -- date book is checked out
- checkout_date DATE NOT NULL,
- 
+ checkout_date DATETIME NOT NULL,
+ -- date when book is due
  -- The due date is found by adding the checkout length from book to checkout_date
- 
- -- to the date checked out
+ due_date DATETIME NOT NULL,
+
   CONSTRAINT FK_checked_out_user
     FOREIGN KEY (user_id) REFERENCES lib_user(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
     
  CONSTRAINT FK_checked_out_book
-    FOREIGN KEY (book_id) REFERENCES book(book_id)
+    FOREIGN KEY (book_id) REFERENCES book_inventory(book_id)
     ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
@@ -240,8 +261,8 @@ CREATE TABLE user_hist
  book_borrowed INT NOT NULL,
   -- what library is the book checked out from?
  library_id INT NOT NULL,
- date_borrowed DATE NOT NULL,
- date_returned DATE DEFAULT NULL,
+ date_borrowed DATETIME NOT NULL,
+ date_returned DATETIME DEFAULT NULL,
 
  
  CONSTRAINT FK_hist_user
@@ -249,7 +270,7 @@ CREATE TABLE user_hist
     ON UPDATE CASCADE ON DELETE CASCADE,
 
 CONSTRAINT FK_hist_book
-    FOREIGN KEY (book_borrowed) REFERENCES book(book_id)
+    FOREIGN KEY (book_borrowed) REFERENCES book_inventory(book_id)
     ON UPDATE CASCADE ON DELETE CASCADE,    
    
 CONSTRAINT FK_hist_library
@@ -299,57 +320,142 @@ DELIMITER ;
 -- PROCEDURES
 --
 
+-- CALL place_hold(1, "Moby Dick", 1, 2); -- lib_id = 2 start off with only book checked out
+-- CALL place_hold(2, "Moby Dick", 1, 2); -- results in 2 holds in "Central Library..." (diff users)
+-- CALL place_hold(2, "Moby Dick", 3, 1); -- results in 3 holds (at least 1 at each lib)
+-- CALL search_for_book("Moby Dick", 1);
+
 -- Lists the library branch where each available copy of a book is located
+DROP PROCEDURE IF EXISTS search_for_book;
 DELIMITER $$
 CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50), IN lib_sys_id_p INT)
 BEGIN
 -- This cannot be a function because a table is returned
+ DECLARE derived_isbn VARCHAR(17);
+ SET derived_isbn = (SELECT isbn FROM book WHERE title = booktitle_p LIMIT 1);
+ 
  WITH
    -- all copies of this book in the system with their shelf_id, case_id, local shelf/case id, lib_id
   all_copies AS(
-   SELECT book.book_id, library.library_name, library.library_id, bookcase.bookcase_local_num, bookshelf.bookshelf_local_num,
-    bookcase.bookcase_id, bookshelf.bookshelf_id, COUNT(*) AS num_copies_at_library
-   FROM book
-   JOIN bookshelf ON book.bookshelf_id = bookshelf.bookshelf_id
-   JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
-   JOIN library ON bookcase.library_id = library.library_id
-   WHERE (title = booktitle_p AND lib_sys_id_p = library.library_system)
-   GROUP BY library.library_id),
-
-  -- Get the Copies that are checked out at a given library
-  num_copies_taken AS(
-    SELECT all_copies.book_id, all_copies.library_id, COUNT(checked_out_books.book_id) AS num_checked_out
+    SELECT
+      book_inventory.book_id,
+      book_inventory.isbn,
+      library.library_name,
+      library.library_id,
+      bookcase.bookcase_local_num,
+      bookshelf.bookshelf_local_num,
+      bookcase.bookcase_id,
+      bookshelf.bookshelf_id
+    FROM book_inventory
+    JOIN bookshelf ON book_inventory.bookshelf_id = bookshelf.bookshelf_id
+    JOIN bookcase ON bookshelf.bookcase_id = bookcase.bookcase_id
+    JOIN library ON bookcase.library_id = library.library_id
+    WHERE (book_inventory.isbn = derived_isbn AND lib_sys_id_p = library.library_system)
+  ),
+  num_copies_exist AS(
+    SELECT all_copies.library_id, count(*) as num_copies_at_library
     FROM all_copies
-    LEFT OUTER JOIN checked_out_books ON checked_out_books.book_id = all_copies.book_id
     GROUP BY all_copies.library_id
   ),
-  
-  -- Get the number of holds 
   num_copies_available AS(
-    SELECT all_copies.*, num_copies_taken.num_checked_out,
-        (all_copies.num_copies_at_library - num_copies_taken.num_checked_out) AS num_copies_in_stock
+    SELECT
+      all_copies.library_id,
+      COUNT(checked_out_books.book_id) as num_checked_out,
+      (num_copies_exist.num_copies_at_library - COUNT(checked_out_books.book_id)) as num_copies_in_stock
     FROM all_copies
-    LEFT OUTER JOIN num_copies_taken 
-    ON all_copies.book_id = num_copies_taken.book_id
+    LEFT JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
+    LEFT JOIN checked_out_books ON all_copies.book_id = checked_out_books.book_id
+    GROUP BY all_copies.library_id
   ),
-  
   -- Find how many holds there are for the book at each library
+  relevant_holds AS (
+    SELECT all_copies.*, holds.hold_id, holds.user_id
+    FROM all_copies
+    LEFT JOIN holds ON holds.library_id = all_copies.library_id -- AND holds.isbn = all_copies.isbn 
+    WHERE holds.isbn = derived_isbn
+    -- multiple users at one library can have the "same" hold
+    GROUP BY holds.library_id, holds.user_id
+  ),
   num_holds AS(
-    SELECT num_copies_available.*, COUNT(holds.book_id) AS number_holds
-        FROM num_copies_available
-        LEFT OUTER JOIN holds
-        ON num_copies_available.book_id = holds.book_id
-        GROUP BY num_copies_available.book_id
+    SELECT
+      relevant_holds.library_id,
+      COUNT(*) AS number_holds
+    FROM relevant_holds
+    GROUP BY relevant_holds.library_id
+  ),
+  combined_table AS (
+    SELECT
+      all_copies.library_id,
+      all_copies.library_name,
+      num_copies_exist.num_copies_at_library,
+      num_copies_available.num_checked_out,
+      num_copies_available.num_copies_in_stock,
+      -- if no holds, may be null, replace with 0
+      coalesce(num_holds.number_holds, 0) AS number_holds
+    FROM all_copies
+    LEFT OUTER JOIN num_copies_exist ON num_copies_exist.library_id = all_copies.library_id
+    LEFT OUTER JOIN num_holds ON num_holds.library_id = all_copies.library_id
+    LEFT OUTER JOIN num_copies_available ON all_copies.library_id = num_copies_available.library_id
+    GROUP BY all_copies.library_id
   )
-  
-  SELECT book_id, library_name, library_id, bookcase_local_num, bookshelf_local_num,
-    bookcase_id, bookshelf_id, num_copies_at_library, num_checked_out, num_copies_in_stock, number_holds
-    FROM num_holds;
 
- 
+  SELECT * FROM combined_table;
 END $$
--- resets the DELIMETER
 DELIMITER ;
+
+
+DROP FUNCTION IF EXISTS is_book_checked_out;
+DELIMITER $$
+CREATE FUNCTION is_book_checked_out(book_id_p INT)
+ RETURNS BOOLEAN
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- must be > 0 copies available (and book_id cant be already checked out)
+  DECLARE book_already_out BOOLEAN;
+  SET book_already_out = (
+    SELECT COUNT(*) > 0
+    FROM checked_out_books
+    WHERE book_id = book_id_p
+    GROUP BY book_id
+  );
+  RETURN(book_already_out);
+END $$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS is_book_avail;
+DELIMITER $$
+CREATE FUNCTION is_book_avail(book_title_p VARCHAR(200), lib_sys_id_p INT, lib_id_p INT)
+ RETURNS INT
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+  -- returns a book_id of a copy of the book
+  -- titled 'book_title_p' in the library system
+  -- -1 if no book exists
+  DECLARE book_copy_avail INT;
+  SET book_copy_avail = (
+    WITH avail_book_in_sys as (
+      SELECT book_inventory.* FROM book 
+      JOIN book_inventory ON book_inventory.isbn = book.isbn
+      JOIN bookshelf on bookshelf.bookshelf_id = book_inventory.bookshelf_id
+      JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
+      JOIN library on library.library_id = bookcase.library_id
+      WHERE
+        book.title = book_title_p AND
+        library.library_system = lib_sys_id_p AND 
+        library.library_id = lib_id_p AND
+        book_inventory.book_id NOT IN (SELECT book_id FROM checked_out_books)
+      LIMIT 1
+    )
+    SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.book_id ELSE -1 END)
+    FROM avail_book_in_sys
+  );
+
+  RETURN(book_copy_avail);
+END $$
+DELIMITER ;
+
 
 
 DELIMITER $$
@@ -374,7 +480,8 @@ BEGIN
     books_in_lib_sys AS (
         SELECT lib_book_shelves.*, book.title AS book_title, book.author, COUNT(book.title) AS num_copies_at_library
         FROM lib_book_shelves
-        JOIN book ON lib_book_shelves.bookshelf_id = book.bookshelf_id
+        JOIN book_inventory ON lib_book_shelves.bookshelf_id = book_inventory.bookshelf_id
+        JOIN book ON book.isbn = book_inventory.isbn
         -- Get the number of copies of EACH book at EACH library
         GROUP BY lib_book_shelves.library_name, book.title
     )
@@ -391,58 +498,99 @@ DELIMITER ;
 -- Adds the book to the "checked out book" table, 
 -- returns the due date
 -- Adds book to the user's history
+DROP PROCEDURE IF EXISTS checkout_book;
 DELIMITER $$
-CREATE PROCEDURE check_out(IN book_id_p INT, IN user_id_p INT)
-BEGIN
- DECLARE checkout_length_days INT;
- DECLARE library_book_ID INT;
- 
- 
- SET checkout_length_days = 
-   (SELECT checkout_length_days FROM book 
-    WHERE book_id = book_id_p);
-  
-  -- Adds the book to the check_out_books table
-   INSERT INTO checked_out_books
-   VALUES (user_id_p, book_id_p, now());
-   
-   -- The due date of the book is:
-   SELECT DATE(CURDATE() + checkout_length_days) AS "The book is due: ";
- 
- SET library_book_ID = (
-    SELECT library_id FROM library
-    WHERE library.library_id IN 
-    (SELECT bookcase_id FROM bookshelf
-     WHERE (bookshelf.booksheld_id IN (SELECT * FROM book WHERE book_id = book_id_p))));
- 
-   -- Adding the checkout into the user_hist table
-   INSERT INTO user_hist
-   VALUES (DEFAULT, user_id_p, book_id_p, library_book_ID, 
-        now(), DEFAULT);
-END $$
--- resets the DELIMETER
-DELIMITER ;
+CREATE PROCEDURE checkout_book(
+  IN user_id_p INT,
+  IN book_title VARCHAR(200),
+  IN lib_sys_id_p INT,
+  IN lib_id_p INT
+) checkout_label:BEGIN
+  -- given user_id, book_title, lib_sys_id, & lib_id -> checkout book
+  -- RETURN: (1, due_datetime) = success, -1 = no copies avail, else = failure
+  -- modify checked_out_books & user_hist tables
+  DECLARE checkout_length_days INT;
+  DECLARE checkout_datetime DATETIME;
+  DECLARE due_datetime DATETIME;
+  DECLARE avail_book_id INT;
 
+  -- use transaction bc multiple inserts and should rollback on error
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    SHOW ERRORS;
+    ROLLBACK;
+    SELECT 0 as "rtncode", null as "due_date";
+  END;
+
+  -- function return -1 if no coopies of the book can be checked out
+  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p);
+  IF avail_book_id = -1 THEN
+    SELECT -1 as "rtncode", null as "due_date";
+    LEAVE checkout_label;
+  END IF;
+
+  SET checkout_length_days = (
+    SELECT book_inventory.checkout_length_days FROM book_inventory 
+    WHERE book_id = avail_book_id
+  );
+
+  SET checkout_datetime = NOW();
+  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
+
+  -- Adds the book to the check_out_books table
+  START TRANSACTION; -- may need to rollback bc multiple inserts
+  INSERT INTO checked_out_books (user_id,   book_id,       checkout_date,     due_date)
+  VALUES                        (user_id_p, avail_book_id, checkout_datetime, due_datetime);
+
+  -- Adding the checkout into the user_hist table
+  INSERT INTO user_hist (loan_id, user_id,   book_borrowed, library_id, date_borrowed)
+  VALUES                (DEFAULT, user_id_p, avail_book_id, lib_id_p,   checkout_datetime);
+
+  -- TODO: in checkout return this info: bookcase_local_num & bookshelf_local_num
+  SELECT 1 as "rtncode", due_datetime as "due_date";
+  COMMIT;
+END $$
+DELIMITER ;
 
 -- Procedure to place a hold for a book
 -- will put a hold on the copy of the book that has been checked out the longest
+DROP PROCEDURE IF EXISTS place_hold;
 DELIMITER $$
-CREATE PROCEDURE place_hold(IN user_id_p INT, IN title_p VARCHAR(200))
-BEGIN 
--- get the copy of book in checked_out_books that has been out the longest
--- make a hold with that book and user date
+CREATE PROCEDURE place_hold(
+  IN user_id_p INT,
+  IN title_p VARCHAR(200),
+  IN lib_sys_id_p INT,
+  IN lib_id_p INT
+) place_hold_label:BEGIN
+  -- returns {rtncode: <code>}
+  -- code = 0: user already placed a hold on that book at that library
+  -- code = 1: success
 
-INSERT INTO holds
-    VALUES (DEFAULT, 
-        -- the book_id of the book that has been checked out the longest
-            (SELECT book_id FROM checked_out_books 
-             WHERE (title_p = title)
-             ORDER BY checkout_date ASC 
-             LIMIT 1)
-            , user_id_p,
-            now());
+  -- get isbn from title
+  DECLARE book_isbn VARCHAR(17);
+
+  SET book_isbn = (
+    SELECT isbn FROM book WHERE book.title = title_p
+  );
+
+  -- make sure user doesnt have a hold on this book already
+  IF EXISTS (
+    SELECT * FROM holds
+    JOIN book ON book.isbn = holds.isbn
+    WHERE (lib_sys_id_p = holds.lib_sys_id AND user_id = user_id_p AND holds.isbn = book_isbn)
+  ) THEN
+    SELECT 0 as rtncode;
+    LEAVE place_hold_label;
+  END IF;
+
+  -- make a hold with that book and user date
+  INSERT INTO holds (hold_id, isbn,      user_id,   lib_sys_id,   library_id,  hold_start_date)
+  VALUES            (DEFAULT, book_isbn, user_id_p, lib_sys_id_p, lib_id_p,    NOW());
+
+  COMMIT;
+
+  SELECT 1 as rtncode;
 END $$
--- resets the DELIMETER
 DELIMITER ;
 
 -- returns a book to the library
@@ -450,6 +598,10 @@ DELIMITER $$
 CREATE PROCEDURE return_book(IN book_id_p INT, IN user_id_p INT)
 BEGIN
 DECLARE book_library_id INT;
+DECLARE new_checkout_user_id INT;
+DECLARE checkout_length_days INT;
+DECLARE due_datetime DATE;
+
 -- A function to get the library_id for a specific book
 SELECT library_id_from_book(book_id_P) INTO book_library_id;
 
@@ -469,12 +621,17 @@ UPDATE user_hist
  
  -- Checks out the book for the next person on hold, if one exists 
  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
- IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
-     INSERT INTO checked_out_books 
-     VALUES ((SELECT user_id FROM holds 
-                WHERE (book_id_p = book_id) 
-                ORDER BY hold_start_date ASC LIMIT 1)
-            , book_id_p, now());
+IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
+  SET new_checkout_user_id = (
+    SELECT user_id FROM holds
+    WHERE (book_id_p = book_id)
+    ORDER BY hold_start_date ASC LIMIT 1
+  );
+  SET checkout_length_days  = (SELECT checkout_length_days FROM book WHERE book_id = book_id_p);
+  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
+
+  INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
+  VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
       
       -- Updates user_hist 
     INSERT INTO user_hist
@@ -594,8 +751,6 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
--- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd");
--- call insert_user("testfname", "testlname", curdate(), True, "testusername", "testpwd"); -- will fail bc usernames MUST be unique
 
 DELIMITER $$
 CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
@@ -671,7 +826,7 @@ DELIMITER $$
 CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
     -- PRECONDITION: backend code uses get_users_lib_id to get their library_id BEFORE this procedure
     IN in_lib_id INT,
-    IN in_isbn VARCHAR(75),
+    IN in_isbn VARCHAR(17),
     IN in_author VARCHAR(100),
     IN in_publisher VARCHAR(100),
     IN in_is_audio_book BOOL,
@@ -680,18 +835,22 @@ CREATE PROCEDURE add_new_book(IN in_title VARCHAR(200),
     IN in_book_dewey FLOAT,
     IN in_late_fee_per_day FLOAT)
 BEGIN
-    DECLARE placement_bookshelf_id INT;
-    -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
-    -- NOTE: in a lot of cases the Dewey Number is an estimate. 
-    -- Real data domain experts would be needed to provide the exact dewey numbers
-    -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
-    -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
-    SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
-    
-    INSERT INTO book (isbn, title, author, publisher, is_audio_book, 
-        num_pages, checkout_length_days, book_dewey, late_fee_per_day, bookshelf_id)
-    VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, 
-        in_num_pages, in_checkout_length_days, in_book_dewey, in_late_fee_per_day, placement_bookshelf_id);
+  DECLARE placement_bookshelf_id INT;
+  -- Using the dewey number of the book, puts it in the right bookshelf + bookshelf
+  -- NOTE: in a lot of cases the Dewey Number is an estimate. 
+  -- Real data domain experts would be needed to provide the exact dewey numbers
+  -- Reference: https://www.britannica.com/science/Dewey-Decimal-Classification 
+  -- Reference (through searching each book): https://catalog.loc.gov/vwebv/ui/en_US/htdocs/help/numbers.html
+  SET placement_bookshelf_id = (SELECT get_bookshelf_from_dewey(in_book_dewey, in_lib_id) );
+  
+  -- check if book is already in master list, if not then have to add
+  IF NOT EXISTS (SELECT 1 FROM book WHERE in_isbn = book.isbn) THEN
+    INSERT INTO book (isbn, title, author, publisher, is_audio_book, num_pages, book_dewey)
+    VALUES(in_isbn, in_title, in_author, in_publisher, in_is_audio_book, in_num_pages, in_book_dewey);
+  END IF;  
+  
+  INSERT INTO book_inventory (book_id, isbn, bookshelf_id, checkout_length_days, late_fee_per_day)
+  VALUES(DEFAULT, in_isbn, placement_bookshelf_id, in_checkout_length_days, in_late_fee_per_day);
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -942,11 +1101,11 @@ END $$
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_user_id(in_user_id INT)
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
-    DECLARE lib_sys_id BOOL;
+    DECLARE lib_sys_id INT;
     -- GIVEN a user's id, returns the id of the library system 
     SELECT library_system INTO lib_sys_id
         FROM library
@@ -985,11 +1144,11 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION get_lib_sys_id_from_sys_name(in_lib_sys_name VARCHAR(100))
- RETURNS BOOL 
- DETERMINISTIC 
+ RETURNS INT
+ DETERMINISTIC
  READS SQL DATA
 BEGIN
-    DECLARE lib_sys_id BOOL;
+    DECLARE lib_sys_id INT;
     -- GIVEN a user's id, returns the id of the library system 
     SELECT library_system INTO lib_sys_id
         FROM library
@@ -1048,7 +1207,6 @@ BEGIN
 END $$
 -- resets the DELIMETER
 DELIMITER ;
-
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
@@ -1138,7 +1296,7 @@ CALL insert_user(
 );
   
 -- ##### ADD some BOOKS ####
-  CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
+CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
     1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
     false, 1442, 14, 005.74, 10);
@@ -1196,3 +1354,10 @@ CALL add_new_book("American Gods", 3,
 CALL add_new_book("Death of a Salesman", 4,
     9780140481341, "Arthur Miller", "Penguin Plays", false, 
     139, 21, 812.52, .06);
+
+-- have test user checkout one copy of Moby Dick (2 available)
+-- user_id = 1, book_title = moby dick, lib_sys_id = 1(Metro Boston Library Network), lib_id = 1 (match insert above = Charlestown)
+-- test search with user: nickrizzo -> moby dick
+-- in web app, try checking out second copy of "moby dick" at this library
+CALL checkout_book(1, "Moby Dick", 1, 1); -- will work twice (but then no more copies available)
+CALL checkout_book(1, "Moby Dick", 1, 2); -- get last copy of moby dick in system (but diff lib)

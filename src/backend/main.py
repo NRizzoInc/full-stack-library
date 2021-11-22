@@ -95,25 +95,26 @@ class WebApp(UserManager):
         @login_required
         def search_book():
             form = BookSearchForm(request.form)
-            url = "/"
             # Get the library system of the user to search for
-            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
-            search_res = []
+            lib_sys_id = self.get_lib_sys_id_from_user_id(current_user.id)
+            BookSearchTableCells = []
             if lib_sys_id is not None:
                 raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
-                search_res = create_search_cells(raw_res_list, form.book_title.data)
+                BookSearchTableCells = create_search_cells(raw_res_list, form.book_title.data)
 
             # If the list is empty, "No Items" is displayed
-            search_table = BookSearchTable(search_res)
+            search_table = BookSearchTable(BookSearchTableCells)
 
-            return render_template("searchResult.html", book_title_searched=form.book_title.data,
-                url=url, result_table=search_table)
+            return render_template("searchResult.html",
+                book_title_searched=form.book_title.data,
+                result_table=search_table
+            )
 
         @self._app.route("/get_lib_sys_catalog", methods=["GET"])
         @login_required
         def get_lib_sys_catalog():
             lib_sys_name = self.get_lib_sys_name_from_user_id(current_user.id)
-            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
+            lib_sys_id = self.get_lib_sys_id_from_user_id(current_user.id)
             catalog_dict = self.search_lib_sys_catalog(lib_sys_id)
             catalog_cells = []
             if catalog_dict is not None:
@@ -139,35 +140,68 @@ class WebApp(UserManager):
             return jsonify(list(id_name_dict.items()))
 
     def createCheckoutPages(self):
-        #TODO: make this a login required page (or at least have them login right now)
-        @self._app.route('/checkout', methods=['POST', 'GET'])
-        @login_required
-        def checkout():
-            title = request.args.get('book_title')
-            if request.method == 'GET':
-                return render_template("checkout.html", book_title=title)
-            elif request.method == "POST":
-                # TODO: make a query / call procedure for checking out a book
-                print(f"Checking out book {title}")
-                # TODO: call procedure to verify user is part of the library system the book belongs to
-                # TODO: call checkout procedure and return to home
-                # TODO: have due_date be part of procedure results
-                # TODO: have success_status include if they're on hold or not + details
-                return redirect(url_for("checkoutResult",
-                    success_status="Success",
-                    book_title=title,
-                    due_date="Sept 20, 2022"))
+        def handleCheckout(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
+            # checkout book w/ error check
+            try:
+                checkout_res_dict = self.checkout_book(user_id, book_title, lib_sys_id, lib_id)
+            except Exception as err:
+                print(f"Failed to checkout book err: {err}")
 
-        @self._app.route('/checkoutResult', methods=['GET'])
+            if(checkout_res_dict["rtncode"] != 1):
+                flash(f"Failed to checkout book!", "is-danger")
+                if checkout_res_dict["rtncode"] == -1:
+                    flash("No more copies available.", "is-danger")
+                return redirect(url_for("index"))
+            
+            # TODO: have due_date be part of procedure results
+            # TODO: have success_status include number of people ahead of them on hold
+            flash("Successfully checked out: " + str(book_title), "is-success")
+            flash("Due Date: " + str(checkout_res_dict["due_date"]), "is-info")
+            return redirect(url_for("index"))
+
+        def handleHold(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
+            # place hold on book w/ error check
+            try:
+                hold_res_dict = self.place_hold(user_id, book_title, lib_sys_id, lib_id)
+            except Exception as err:
+                errMsg = "Failed to place hold on " + str(book_title)
+                print(f"{errMsg}: {err}")
+                flash(errMsg, "is-danger")
+                return redirect(url_for("index"))
+
+            if(hold_res_dict["rtncode"] == 0):
+                flash("Failed to place hold on book!", "is-danger")
+                flash("You already placed a hold on '"+str(book_title)+"' at this library", "is-warning")
+                return redirect(url_for("index"))
+
+            flash("Successfully placed hold on " + str(book_title), "is-success")
+            return redirect(url_for("index"))
+
+        @self._app.route('/get_book/<string:method>/<string:book_title>', methods=['POST'])
         @login_required
-        def checkoutResult():
-            title = request.args.get('book_title')
-            _due_date = request.args.get('due_date')
-            _success_status = request.args.get('success_status')
-            return render_template("checkoutResult.html",
-                                success_status = _success_status,
-                                book_title = title,
-                                due_date = _due_date)
+        def getbook(book_title: str, method: str):
+            """Actually checks out or places hold on a book based on url params
+            Args:
+                book_title (str): The title of the book
+                method (str): 'checkout' or 'hold'
+            """
+
+            is_checkout = method == "checkout"
+
+            user_id = current_user.id
+            lib_sys_id = self.get_lib_sys_id_from_user_id(user_id)
+            lib_id = self.get_lib_id_from_user_id(user_id)
+
+            # error check
+            if(book_title == None or lib_sys_id == None or lib_id == None):
+                flash("Invalid Checkout!", "is-danger")
+                # try to go back, else returns to index
+                return redirect(url_for("index"))
+
+            if is_checkout:
+                return handleCheckout(book_title, user_id, lib_sys_id, lib_id)
+            else: # is_hold
+                return handleHold(book_title, user_id, lib_sys_id, lib_id)
 
     def createUserPages(self):
         # https://flask-login.readthedocs.io/en/latest/#login-example

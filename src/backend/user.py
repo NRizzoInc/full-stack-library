@@ -19,5 +19,5 @@ class User(UserMixin):
         """
         # store the user's id for use when object is accessed (via 'current_user')
         # they can use the id for more queries
-        self.id = userId
+        self.id = int(userId)
         self.lib_card_num = libCardNum

@@ -243,7 +243,8 @@ class DB_Manager():
             # Result is a list of dictionaries where the key's are repeated
             search_res = self.cursor.fetchall()
             return search_res
-        except:
+        except Exception as err:
+            print("Failed to search for book: " + str(err))
             return None
 
     def search_lib_sys_catalog(self, lib_sys_id: int) -> Optional[List[Dict]]:
@@ -256,7 +257,7 @@ class DB_Manager():
         except:
             return None
 
-    def get_sys_id_from_user_id(self, user_id) -> Optional[int]:
+    def get_lib_sys_id_from_user_id(self, user_id) -> Optional[int]:
         """Given a user's id, returns the id of the library system"""
         try:
             self.cursor.execute("select get_lib_sys_id_from_user_id(%s)", (user_id))
@@ -284,6 +285,58 @@ class DB_Manager():
             print(f"Failed to get lib card num by username: {err}")
             return None
 
+    def checkout_book(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> dict:
+        """Checkout a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns:
+            dict: {
+                rtncode: 1 (success), -1 (no copies available), else failure
+                due_date: Optional[datetime]
+            }
+        """
+
+        try:
+            self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
+                                (user_id, book_title, lib_sys_id, lib_id))
+            # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
+            # print(self.cursor._last_executed)
+            res_dict = self.cursor.fetchone()
+            return res_dict
+        except Exception as err:
+            raise Exception(f"Failed to checkout book: {err}")
+
+    def place_hold(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> Dict[str, int]:
+        """Places a hold on a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns: {rtncode: <code>}
+            code = 0: user already placed a hold on that book at that library
+            code = 1: success
+        """
+        try:
+            self.cursor.execute("call place_hold(%s, %s, %s, %s)",
+                                (user_id, book_title, lib_sys_id, lib_id))
+            hold_res_dict = self.cursor.fetchone()
+            return hold_res_dict
+        except Exception as err:
+            raise Exception(f"Failed to checkout book: {err}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
