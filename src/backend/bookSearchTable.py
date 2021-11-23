@@ -23,6 +23,7 @@ class BookSearchTable(Table):
         button_attrs={"class": "button is-link"}
     )
     border = True
+    no_items = f"This library system does not have the book you are looking for"
 
 class BookSearchCell(object):
     def __init__(self,

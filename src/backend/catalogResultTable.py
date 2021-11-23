@@ -10,6 +10,7 @@ class CatalogResultTable(Table):
     lib_name = Col('Library Name')
     total_num_at_lib = Col('Total Number of Copies at Library')
     border = True
+    no_items = "This Library System has no books in its catalog"
 
 class CatalogResultCell(object):
     def __init__(self,
