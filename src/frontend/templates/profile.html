@@ -1,7 +1,29 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h1 class="title">
-    Welcome, User!
-</h1>
-{% endblock %}
+<body>
+    {% block content %}
+
+    <div class="columns is-half is-centered">
+        <div class="control">
+            {% include "flash.html" %}
+        </div>
+    </div>
+
+    <div class="container block">
+        <h2>Displaying books currently checked out:</h2>
+        {{ checkouts_table }}
+    </div>
+
+    <div class="container block">
+        <h2>Displaying holds currently placed:</h2>
+        {{ holds_table }}
+    </div>
+
+    <div class="buttons is-centered">
+        <a href="{{ url_for('index') }}" class="button is-link">
+            Return Home
+        </a>
+    </div>
+
+    {% endblock %}
+</body>

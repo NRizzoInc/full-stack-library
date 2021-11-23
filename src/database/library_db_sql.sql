@@ -1354,6 +1354,69 @@ BEGIN
   RETURN(is_still_pending);
 END $$
 -- resets the DELIMETER
+
+DROP PROCEDURE IF EXISTS get_user_checkouts;
+DELIMITER $$
+CREATE PROCEDURE get_user_checkouts(IN user_id_p INT)
+BEGIN
+  -- GIVEN: user_id
+  -- RETURNS: user_id, book_title, book_id, author, checkout_date, due_date
+
+  SELECT
+    user_id_p AS "user_id",
+    book.title AS book_title,
+    checked_out_books.book_id,
+    book.author,
+    checked_out_books.checkout_date,
+    checked_out_books.due_date
+  FROM checked_out_books
+  JOIN book_inventory ON book_inventory.book_id = checked_out_books.book_id
+  JOIN book ON book_inventory.isbn = book.isbn
+  WHERE checked_out_books.user_id = user_id_p;
+
+END $$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_user_holds;
+DELIMITER $$
+CREATE PROCEDURE get_user_holds(IN user_id_p INT)
+BEGIN
+  -- GIVEN: user_id
+  -- RETURNS: hold_id, book_title, author, library_name, hold_start_date
+
+  SELECT
+    holds.hold_id,
+    book.title AS book_title,
+    book.author,
+    library.library_name,
+    holds.hold_start_date
+  FROM holds
+  JOIN book ON holds.isbn = book.isbn
+  JOIN library ON library.library_id = holds.library_id
+  WHERE holds.user_id = user_id_p;
+
+END $$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS get_checkout_book_id_from_user_title;
+DELIMITER $$
+CREATE FUNCTION get_checkout_book_id_from_user_title(user_id_in INT, book_title_in VARCHAR(200))
+ RETURNS INT
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+ DECLARE book_id_out INT;
+
+  SELECT checked_out_books.book_id
+  INTO book_id_out
+  FROM checked_out_books
+  JOIN book_inventory ON book_inventory.book_id = checked_out_books.book_id
+  JOIN book ON book.isbn = book_inventory.isbn
+  WHERE checked_out_books.user_id = user_id_in AND book.title = book_title_in
+  LIMIT 1;
+
+  RETURN(book_id_out);
+END $$
 DELIMITER ;
 
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
