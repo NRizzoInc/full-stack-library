@@ -1021,6 +1021,39 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
+CREATE PROCEDURE get_employee_pending_from_user_id(IN in_user_id INT)
+BEGIN
+    -- PRECONDITION: the in_user_id is the user_id of an employee
+    -- given the user id (of an employee), get ALL pending employees belonging to this employee's library
+    -- return their first_name, last_name, job_role, and hire_date
+    
+    DECLARE user_lib_id INT;
+    -- Only care about employees that are part of the same library
+    SELECT library_id INTO user_lib_id
+        FROM employee
+        WHERE in_user_id = employee.user_id;
+    
+    WITH pending_employees AS(
+        SELECT hire_date, job_role, user_id
+        FROM employee
+        WHERE is_approved = false
+    )
+    
+    -- Get all needed information
+    SELECT pending_employees.hire_date, 
+            pending_employees.job_role, 
+            lib_user.first_name, 
+            lib_user.last_name
+        FROM pending_employees
+        JOIN lib_user 
+        ON pending_employees.user_id = lib_user.user_id;
+
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+
+DELIMITER $$
 CREATE FUNCTION get_lib_id_from_name(in_lib_name VARCHAR(100), in_lib_sys_name VARCHAR(100))
  RETURNS INT
  DETERMINISTIC
