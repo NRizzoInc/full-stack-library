@@ -330,7 +330,7 @@ class DB_Manager():
 
         Returns:
             dict: {
-                rtncode: 1 (success), -1 (no copies available), else failure
+                rtncode: 1 (success), -1 (no copies available), -2 = already have checkout, 0/else = failure
                 due_date: Optional[datetime]
             }
         """
@@ -338,8 +338,6 @@ class DB_Manager():
         try:
             self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
                                 (user_id, book_title, lib_sys_id, lib_id))
-            # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
-            # print(self.cursor._last_executed)
             res_dict = self.cursor.fetchone()
             return res_dict
         except Exception as err:

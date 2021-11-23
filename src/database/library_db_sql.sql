@@ -429,7 +429,12 @@ DELIMITER ;
 
 DROP FUNCTION IF EXISTS is_book_avail;
 DELIMITER $$
-CREATE FUNCTION is_book_avail(book_title_p VARCHAR(200), lib_sys_id_p INT, lib_id_p INT)
+CREATE FUNCTION is_book_avail(
+  book_title_p VARCHAR(200),
+  lib_sys_id_p INT,
+  lib_id_p INT,
+  user_id_p INT
+)
  RETURNS INT
  DETERMINISTIC
  READS SQL DATA
@@ -437,23 +442,44 @@ BEGIN
   -- returns a book_id of a copy of the book
   -- titled 'book_title_p' in the library system
   -- -1 if no book exists
+  -- -2 if user already checked out book
   DECLARE book_copy_avail INT;
   SET book_copy_avail = (
-    WITH avail_book_in_sys AS (
-      SELECT book_inventory.* FROM book
+    WITH rel_book_in_sys AS (
+      SELECT book.title, book_inventory.book_id as rel_book_id, library.*  FROM book
       JOIN book_inventory ON book_inventory.isbn = book.isbn
       JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
       JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
       JOIN library ON library.library_id = bookcase.library_id
+    ),
+    avail_book_in_sys AS (
+      SELECT * FROM rel_book_in_sys
       WHERE
-        book.title = book_title_p AND
-        library.library_system = lib_sys_id_p AND
-        library.library_id = lib_id_p AND
-        book_inventory.book_id NOT IN (SELECT book_id FROM checked_out_books)
+        title = book_title_p AND
+        library_system = lib_sys_id_p AND
+        library_id = lib_id_p AND
+        rel_book_id NOT IN (SELECT book_id FROM checked_out_books)
       LIMIT 1
+    ),
+    already_checked_out AS (
+      SELECT * FROM rel_book_in_sys
+      -- join means all rows are of "checked out" books
+      JOIN checked_out_books ON checked_out_books.book_id = rel_book_id
+      WHERE
+        checked_out_books.user_id = user_id_p AND
+        title = book_title_p AND
+        library_system = lib_sys_id_p AND
+        library_id = lib_id_p
     )
-    SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.book_id ELSE -1 END)
-    FROM avail_book_in_sys
+    SELECT (CASE
+      -- if user already checked out book, count > 0 (if not select valid book_id)
+      WHEN COUNT(*) > 0 THEN -2 ELSE (
+        SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.rel_book_id ELSE -1 END)
+        FROM avail_book_in_sys
+      ) END
+    )
+    FROM already_checked_out -- should be empty if none checked out already
+      
   );
 
   RETURN(book_copy_avail);
@@ -514,7 +540,8 @@ CREATE PROCEDURE checkout_book(
   -- RETURN: {rtncode: <code>, due_datetime(if success): <datetime> }
   -- code 1:  Success
   -- code -1: no copies available
-  -- code -2: other failure
+  -- code -2: user already has book checked out
+  -- code 0: other failure
   -- modify checked_out_books & user_hist tables
   DECLARE checkout_length_days INT;
   DECLARE checkout_datetime DATETIME;
@@ -530,9 +557,9 @@ CREATE PROCEDURE checkout_book(
   END;
 
   -- function return -1 if no coopies of the book can be checked out
-  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p);
-  IF avail_book_id = -1 THEN
-    SELECT -1 as "rtncode", null as "due_date";
+  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p, user_id_p);
+  IF avail_book_id < 0 THEN
+    SELECT avail_book_id as "rtncode", null as "due_date";
     LEAVE checkout_label;
   END IF;
 

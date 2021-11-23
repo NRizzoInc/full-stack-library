@@ -172,7 +172,10 @@ class WebApp(UserManager):
             if(checkout_res_dict["rtncode"] != 1):
                 flash(f"Failed to checkout book!", "is-danger")
                 if checkout_res_dict["rtncode"] == -1:
-                    flash("No more copies available.", "is-danger")
+                    flash("No more copies available", "is-warning")
+                if checkout_res_dict["rtncode"] == -2:
+                    flash("Already checked out '" +str(book_title)+ "'", "is-warning")
+
                 return redirect(url_for("index"))
 
             # TODO: have due_date be part of procedure results
