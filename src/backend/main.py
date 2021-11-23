@@ -237,6 +237,8 @@ class WebApp(UserManager):
                 # two seperate flashes for diff categories
                 flash("Successfully logged in!", "is-success")
                 flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
+                if self.is_employee_pending_by_user_id(current_user.id):
+                    flash("You are still pending approval as an employee!", "is-info")
 
             # route to original destination
             next = flask.request.args.get('next')

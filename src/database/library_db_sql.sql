@@ -1329,6 +1329,33 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS is_employee_pending_by_user_id;
+DELIMITER $$
+CREATE FUNCTION is_employee_pending_by_user_id(in_user_id INT)
+ RETURNS BOOL
+ DETERMINISTIC
+ READS SQL DATA
+BEGIN
+ DECLARE is_still_pending BOOL;
+  -- return true if the user is still pending as an employee
+  -- If the user is not registered as an employee AT ALL - returns false as well
+  
+  SELECT COUNT(*)
+  INTO is_still_pending
+  FROM employee
+  WHERE 
+    -- first make sure the user exists as an employee
+    user_id = in_user_id 
+    AND
+    -- must be pending approval
+    is_approved = false
+  LIMIT 1;
+
+  RETURN(is_still_pending);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 -- ######## CALL SCRIPTS TO ADD DATA TO DATABASE
 -- Taken from the add_test_data/ scripts
 -- ##### ADD Library Systems ####

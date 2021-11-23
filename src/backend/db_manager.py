@@ -393,6 +393,15 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to deny an employee's approval: {err}")
 
+    def is_employee_pending_by_user_id(self, user_id : int) -> bool:
+        try:
+            self.cursor.execute("select is_employee_pending_by_user_id(%s)", (user_id))
+            is_pending = list(self.cursor.fetchone().values())[0]
+            return bool(is_pending)
+        except Exception as err:
+            print(f"Failed to determine if user with id {user_id} is pending: {err}")
+            return False
+
     def add_new_book(self,
         title : str,
         lib_id : int,
