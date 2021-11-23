@@ -1377,6 +1377,27 @@ BEGIN
 END $$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS get_user_holds;
+DELIMITER $$
+CREATE PROCEDURE get_user_holds(IN user_id_p INT)
+BEGIN
+  -- GIVEN: user_id
+  -- RETURNS: hold_id, book_title, author, library_name, hold_start_date
+
+  SELECT
+    holds.hold_id,
+    book.title AS book_title,
+    book.author,
+    library.library_name,
+    holds.hold_start_date
+  FROM holds
+  JOIN book ON holds.isbn = book.isbn
+  JOIN library ON library.library_id = holds.library_id
+  WHERE holds.user_id = user_id_p;
+
+END $$
+DELIMITER ;
+
 DROP FUNCTION IF EXISTS get_checkout_book_id_from_user_title;
 DELIMITER $$
 CREATE FUNCTION get_checkout_book_id_from_user_title(user_id_in INT, book_title_in VARCHAR(200))

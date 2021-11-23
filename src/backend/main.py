@@ -26,6 +26,7 @@ from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from pendingEmployeeTable import PendingEmployeeCell, PendingEmployeeTable, create_pending_employee_cells
 from catalogResultTable import CatalogResultTable, create_catalog_cells
 from profileCheckoutTable import ProfileCheckoutTable, create_profile_checkout_cells
+from profileHoldsTable import ProfileHoldsTable, create_profile_holds_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
@@ -93,13 +94,21 @@ class WebApp(UserManager):
         @login_required
         def profile():
 
+            # get user's checked out books in table form
             user_checkouts = self.get_user_checkouts(current_user.id)
             checkout_cells = create_profile_checkout_cells(user_checkouts)
             checkouts_table = ProfileCheckoutTable(checkout_cells)
 
+            # get user's holds in table form
+            # ProfileHoldsTable, create_profile_holds_cells
+            user_holds = self.get_user_holds(current_user.id)
+            hold_cells = create_profile_holds_cells(user_holds)
+            holds_table = ProfileHoldsTable(hold_cells)
+
             return render_template("profile.html",
                 title="Library DB Profile",
-                checkouts_table=checkouts_table
+                checkouts_table=checkouts_table,
+                holds_table=holds_table
             )
 
 
@@ -230,6 +239,17 @@ class WebApp(UserManager):
             flash("Successfully returned " + book_title, "is-success")
             flash("TODO: actually implement return_book!!!", "is-warning")
             return redirect(url_for("profile"))
+
+        @self._app.route('/cancel_hold/<int:hold_id>', methods=['POST'])
+        @login_required
+        def cancel_hold(hold_id: int):
+            """Route for cancelling a hold"""
+            # self.cancel_hold(hold_id)
+
+            flash("Successfully cancelled hold", "is-success")
+            flash("TODO: actually implement cancel_hold!!!", "is-warning")
+            return redirect(url_for("profile"))
+
 
     def createUserPages(self):
         # https://flask-login.readthedocs.io/en/latest/#login-example
