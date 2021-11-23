@@ -318,9 +318,13 @@ class WebApp(UserManager):
             form.lib_sys_name.choices = [('', '')] + lib_systems
             form.lib_name.choices = [('', '')] + libraries
 
-            if request.method == "POST" and form.validate_on_submit():
+            if request.method == "GET":
+                return render_template('registration.html', title="LibraryDB Login", form=form)
+
+            elif request.method == "POST" and form.validate_on_submit():
+                print("register validation passed")
                 # actually add user given info is valid/allowed
-                add_employee_res = None
+                add_employee_res = 0 # "failed" to adad employee cus... we arent
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
@@ -348,21 +352,26 @@ class WebApp(UserManager):
 
                 if (add_res == -1):
                     flash("Username already taken", "is-danger")
-                elif (add_res == 1 and add_employee_res != -1):
+                elif (add_res == 1):
                     card_num = self.get_card_num_by_username(form.username.data)
                     msg = "Congratulations, you are now a registered user! \
                           Your library card number is " + str(card_num) + "."
-                    if(add_employee_res == 1):
-                        employee_msg = "You are a registered employee"
-                        if is_approved is False:
-                            employee_msg = employee_msg + " pending approval by a fellow coworker"
                     flash(msg, " is-success")
-                    flash(employee_msg, " is-info")
-                    return redirect(url_for("login"))
+
+                    if (add_employee_res == 1):
+                        employee_msg = "You are a registered employee"
+                        employee_msg += " pending approval by a fellow coworker"
+                        flash(employee_msg, " is-info")
+
                 elif (add_res == 0):
                     flash('Registration Failed!', "is-danger")
                 elif (add_employee_res == -1):
-                    flash('Registration as user was successful! Registration as employee failed!', "is-danger")
+                    flash('Registration as user was successful! \
+                        Registration as employee failed!', "is-danger")
+
+                # since form validated, always return to login
+                return redirect(url_for("login"))
+
             elif request.method == "POST":
                 print("Registration Validation Failed")
 
