@@ -360,6 +360,7 @@ class DB_Manager():
         Returns: {rtncode: <code>}
             code = 0: user already placed a hold on that book at that library
             code = 1: success
+            code = 2: user already has the book checked out
         """
         try:
             self.cursor.execute("call place_hold(%s, %s, %s, %s)",

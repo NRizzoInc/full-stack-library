@@ -191,10 +191,14 @@ class WebApp(UserManager):
                 flash(errMsg, "is-danger")
                 return redirect(url_for("index"))
 
-            if(hold_res_dict["rtncode"] == 0):
+            if(hold_res_dict["rtncode"] != 1):
                 flash("Failed to place hold on book!", "is-danger")
-                flash("You already placed a hold on '"+str(book_title)+"' at this library", "is-warning")
-                return redirect(url_for("index"))
+                if(hold_res_dict["rtncode"] == 0):
+                    flash("You already placed a hold on '"+ str(book_title) + "'", "is-warning")
+                    return redirect(url_for("index"))
+                elif(hold_res_dict["rtncode"] == 2):
+                    flash("You already checked out '" + str(book_title) + "'", "is-warning")
+                    return redirect(url_for("index"))
 
             flash("Successfully placed hold on " + str(book_title), "is-success")
             return redirect(url_for("index"))

@@ -325,6 +325,7 @@ DELIMITER ;
 
 -- CALL place_hold(1, "Moby Dick", 1, 2); -- lib_id = 2 start off with only book checked out
 -- CALL place_hold(2, "Moby Dick", 1, 2); -- results in 2 holds in "Central Library..." (diff users)
+-- CALL place_hold(2, "Moby Dick", 1, 2); -- fails because user already has hold (same user/system)
 -- CALL place_hold(2, "Moby Dick", 3, 1); -- results in 3 holds (at least 1 at each lib)
 -- CALL search_for_book("Moby Dick", 1);
 
@@ -438,12 +439,12 @@ BEGIN
   -- -1 if no book exists
   DECLARE book_copy_avail INT;
   SET book_copy_avail = (
-    WITH avail_book_in_sys as (
+    WITH avail_book_in_sys AS (
       SELECT book_inventory.* FROM book
       JOIN book_inventory ON book_inventory.isbn = book.isbn
-      JOIN bookshelf on bookshelf.bookshelf_id = book_inventory.bookshelf_id
-      JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
-      JOIN library on library.library_id = bookcase.library_id
+      JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
+      JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
+      JOIN library ON library.library_id = bookcase.library_id
       WHERE
         book.title = book_title_p AND
         library.library_system = lib_sys_id_p AND
@@ -510,7 +511,10 @@ CREATE PROCEDURE checkout_book(
   IN lib_id_p INT
 ) checkout_label:BEGIN
   -- given user_id, book_title, lib_sys_id, & lib_id -> checkout book
-  -- RETURN: (1, due_datetime) = success, -1 = no copies avail, else = failure
+  -- RETURN: {rtncode: <code>, due_datetime(if success): <datetime> }
+  -- code 1:  Success
+  -- code -1: no copies available
+  -- code -2: other failure
   -- modify checked_out_books & user_hist tables
   DECLARE checkout_length_days INT;
   DECLARE checkout_datetime DATETIME;
@@ -568,6 +572,7 @@ CREATE PROCEDURE place_hold(
   -- returns {rtncode: <code>}
   -- code = 0: user already placed a hold on that book at that library
   -- code = 1: success
+  -- code = 2: user already has the book checked out
 
   -- get isbn from title
   DECLARE book_isbn VARCHAR(17);
@@ -583,6 +588,24 @@ CREATE PROCEDURE place_hold(
     WHERE (lib_sys_id_p = holds.lib_sys_id AND user_id = user_id_p AND holds.isbn = book_isbn)
   ) THEN
     SELECT 0 as rtncode;
+    LEAVE place_hold_label;
+  END IF;
+
+  -- make sure user doesnt have this book checked out already
+  IF EXISTS (
+    SELECT * FROM checked_out_books
+    JOIN book_inventory ON book_inventory.book_id = checked_out_books.book_id
+    JOIN book ON book.isbn = book_inventory.isbn
+    JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
+    JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
+    JOIN library ON library.library_id = bookcase.library_id
+    WHERE (
+      lib_sys_id_p = library.library_system AND
+      checked_out_books.user_id = user_id_p AND
+      book_inventory.isbn = book_isbn
+    )
+  ) THEN
+    SELECT 2 as rtncode;
     LEAVE place_hold_label;
   END IF;
 
