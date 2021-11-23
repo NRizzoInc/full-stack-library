@@ -329,6 +329,11 @@ class WebApp(UserManager):
                 # Only employees can access this page
                 return redirect("/")
             else:
+                user_id = current_user.id
+                pending_employee_list = self.get_pending_employees(user_id)
+                print(pending_employee_list)
+                for emp in pending_employee_list:
+                    print(emp.values())
                 return render_template("employeeActions.html", add_new_book_form=AddBookForm())
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])

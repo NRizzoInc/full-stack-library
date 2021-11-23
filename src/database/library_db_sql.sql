@@ -1021,7 +1021,7 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-CREATE PROCEDURE get_employee_pending_from_user_id(IN in_user_id INT)
+CREATE PROCEDURE get_pending_employees(IN in_user_id INT)
 BEGIN
     -- PRECONDITION: the in_user_id is the user_id of an employee
     -- given the user id (of an employee), get ALL pending employees belonging to this employee's library

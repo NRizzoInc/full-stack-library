@@ -369,6 +369,16 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 
+    def get_pending_employees(self, employee_user_id : int) -> Optional[List[Dict]]:
+        """Given an employee's user_id, find all employees pending approval at their library"""
+        try:
+            self.cursor.execute("call get_pending_employees(%s)", employee_user_id)
+            # Result is a list of dictionaries where the key's are repeated
+            pending_employee_list = self.cursor.fetchall()
+            return pending_employee_list
+        except Exception as err:
+            raise Exception(f"Failed to find pending employees: {err}")
+
     def add_new_book(self,
         title : str,
         lib_id : int,
