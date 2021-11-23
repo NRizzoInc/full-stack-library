@@ -1418,18 +1418,15 @@ CALL insert_user(
   4, -- library_id = 4 (Plymouth Public Library - another system)
   CURDATE(), true, "mattrizzo", "pwd"
 );
+
 CALL insert_employee(CURDATE(), 55000,
     "Manages the Plymouth Public library. Can add new books to the catalog.",
     -- NOTE: both of these ONLY work because it is being done manually.
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 2nd user to be added
-<<<<<<< HEAD
-    -- 2nd is library id
-    2, 4);
-=======
     -- 2nd is library id
     2, 4, true);
->>>>>>> [feat] Added is_approved to table and integrated with is_employee check in python
+
 
 CALL insert_user(
   "Domenic", "Privitera",
