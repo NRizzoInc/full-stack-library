@@ -23,6 +23,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 #--------------------------------Project Includes--------------------------------#
 from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
+from pendingEmployeeTable import PendingEmployeeCell, PendingEmployeeTable, create_pending_employee_cells
 from catalogResultTable import CatalogResultTable, create_catalog_cells
 from user import User
 from userManager import UserManager
@@ -330,11 +331,11 @@ class WebApp(UserManager):
                 return redirect("/")
             else:
                 user_id = current_user.id
-                pending_employee_list = self.get_pending_employees(user_id)
-                print(pending_employee_list)
-                for emp in pending_employee_list:
-                    print(emp.values())
-                return render_template("employeeActions.html", add_new_book_form=AddBookForm())
+                pending_employee_table = self._get_pending_employee_table(user_id)
+
+                return render_template("employeeActions.html",
+                                       add_new_book_form=AddBookForm(),
+                                       pending_employee_table=pending_employee_table)
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
@@ -356,6 +357,23 @@ class WebApp(UserManager):
             logout_user()
             flash("Successfully logged out!", "is-success")
             return redirect(url_for("login"))
+
+        @self._app.route('/change_pending_employee_status/<string:action>/<int:employee_id>', methods=['POST'])
+        @login_required
+        def change_pending_employee_status(action: str, employee_id: int):
+            """If the employee is approved, update them in the table. Otherwise remove them from it"""
+            if not current_user.is_employee:
+                # Only verified employees can access this page
+                return redirect(url_for("index"))
+            if action == "approve":
+                self.approve_employee(employee_id)
+            elif action == "deny":
+                self.deny_employee_approval(employee_id)
+
+            # return to the previous page
+            return redirect(url_for("employee_actions",
+                                    add_new_book_form=AddBookForm(),
+                                    pending_employee_table=self._get_pending_employee_table(current_user.id)))
 
     def createEmployeeRoutes(self):
         @self._app.route("/add_new_book", methods=["GET", "POST"])
@@ -407,7 +425,16 @@ class WebApp(UserManager):
                 flash("Add New Book Validation Failed", "is-danger")
 
             # Return to the employee action page
-            return render_template("employeeActions.html", add_new_book_form=add_book_form)
+            return render_template("employeeActions.html",
+                                   add_new_book_form=add_book_form,
+                                   pending_employee_table=self._get_pending_employee_table(current_user.id))
+
+    def _get_pending_employee_table(self, user_id):
+        """Util Function to prevent code duplication
+        \n:user_id the user_id of the employee that is taking actions"""
+        raw_pending_employee_res = self.get_pending_employees(user_id)
+        return PendingEmployeeTable(create_pending_employee_cells(raw_pending_employee_res))
+
     def printSites(self):
         print("Existing URLs:")
         print(f"http://localhost:{self._port}/")

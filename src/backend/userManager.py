@@ -50,6 +50,8 @@ class UserManager(LoginManager, DB_Manager):
             """
             # create an object to hold the user's id & functions (ie checkout, return, etc)
             lib_card_num = self.get_card_num_by_user_id(user_id)
+
+            # This is only true when the user is an employee that has been verified
             is_employee = self.get_is_user_employee(user_id)
             return User(user_id, lib_card_num, is_employee)
 

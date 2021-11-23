@@ -1034,16 +1034,17 @@ BEGIN
         WHERE in_user_id = employee.user_id;
     
     WITH pending_employees AS(
-        SELECT hire_date, job_role, user_id
+        SELECT hire_date, job_role, user_id, employee_id
         FROM employee
         WHERE is_approved = false
     )
     
     -- Get all needed information
-    SELECT pending_employees.hire_date, 
-            pending_employees.job_role, 
-            lib_user.first_name, 
-            lib_user.last_name
+    SELECT lib_user.first_name,
+           lib_user.last_name,
+           pending_employees.job_role,
+           pending_employees.hire_date, 
+           pending_employees.employee_id
         FROM pending_employees
         JOIN lib_user 
         ON pending_employees.user_id = lib_user.user_id;
@@ -1301,6 +1302,29 @@ BEGIN
   LIMIT 1;
 
   RETURN(lib_card_num_out);
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE approve_employee(IN in_employee_id INT)
+BEGIN
+    -- GIVEN: an employee's employee_id, update their status to be approved
+    UPDATE employee
+        SET is_approved = true
+        WHERE employee_id = in_employee_id;
+    commit;
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE deny_employee_approval(IN in_employee_id INT)
+BEGIN
+    -- GIVEN: an employee's employee_id, dont approve them by removing them from the employee table
+    DELETE FROM employee
+        WHERE employee_id = in_employee_id;
+    commit;
 END $$
 -- resets the DELIMETER
 DELIMITER ;

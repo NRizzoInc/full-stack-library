@@ -379,6 +379,20 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to find pending employees: {err}")
 
+    def approve_employee(self, employee_id : int) -> bool:
+        try:
+            self.cursor.execute("call approve_employee(%s)", employee_id)
+            return list(self.cursor.fetchall())
+        except Exception as err:
+            raise Exception(f"Failed to approve an employee: {err}")
+
+    def deny_employee_approval(self, employee_id : int) -> bool:
+        try:
+            self.cursor.execute("call deny_employee_approval(%s)", employee_id)
+            return list(self.cursor.fetchall())
+        except Exception as err:
+            raise Exception(f"Failed to deny an employee's approval: {err}")
+
     def add_new_book(self,
         title : str,
         lib_id : int,
