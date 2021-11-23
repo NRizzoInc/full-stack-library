@@ -32,6 +32,7 @@ class PendingEmployeeTable(Table):
         button_attrs= {"class": "button is-link"}
     )
     border = True
+    no_items = "There are currently no employees to approve"
 
 class PendingEmployeeCell(object):
     def __init__(self,
