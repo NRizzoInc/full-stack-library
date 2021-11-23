@@ -287,12 +287,15 @@ class WebApp(UserManager):
                     # get the user and lib id created for them as a user
                     new_user_id = self.getUserIdFromUsername(form.username.data)
                     lib_id = self.get_lib_id_from_user_id(new_user_id)
+                    # Approval is done after the fact
+                    is_approved = False
                     add_employee_res = self.addEmployee(
                         form.hire_date.data,
                         form.salary.data,
                         form.job_role.data,
                         new_user_id,
-                        lib_id
+                        lib_id,
+                        is_approved
                     )
 
                 if (add_res == -1):
@@ -302,7 +305,9 @@ class WebApp(UserManager):
                     msg = "Congratulations, you are now a registered user! \
                           Your library card number is " + str(card_num)
                     if(add_employee_res == 1):
-                        msg = msg + "\nYou are also a registered employee now!"
+                        msg = msg + "\nYou are a registered employee"
+                        if is_approved is False:
+                            msg = msg + " pending approval by a fellow coworker"
                     flash(msg, " is-success")
                     return redirect(url_for("login"))
                 elif (add_res == 0):

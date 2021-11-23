@@ -83,6 +83,9 @@ CREATE TABLE employee
     salary FLOAT,
     job_role VARCHAR(200),
 
+    -- Used to make sure employees are APPROVED by verified employees before getting added to the system
+    is_approved BOOL DEFAULT FALSE,
+
     -- The user account of the employee
     user_id INT,
      CONSTRAINT FK_employee_user
@@ -760,7 +763,8 @@ CREATE PROCEDURE insert_employee(
   IN in_job_role varchar(200),
   -- REQUIRES INSERT USER IS CALLED FIRST AND THE USER'S NEW id IS OBTAINED
   IN in_user_id INT,
-  IN in_library_id INT
+  IN in_library_id INT,
+  IN in_is_approved BOOL
 ) BEGIN
   -- in case insert into lib_user fails, start a transaction that can rollback other insertions
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -770,9 +774,9 @@ CREATE PROCEDURE insert_employee(
   START TRANSACTION;
 
   -- insert into lib_user
-  INSERT INTO employee (employee_id, hire_date, salary, job_role, user_id, library_id)
+  INSERT INTO employee (employee_id, hire_date, salary, job_role, user_id, library_id, is_approved)
   -- employee_id is auto increment, so specify default behavior
-  VALUES(DEFAULT, in_hire_date, in_salary, in_job_role, in_user_id, in_library_id);
+  VALUES(DEFAULT, in_hire_date, in_salary, in_job_role, in_user_id, in_library_id, in_is_approved);
 
   COMMIT;
 
@@ -1192,7 +1196,9 @@ BEGIN
   SELECT COUNT(*) > 0
   INTO is_user_employee
   FROM employee
+  -- an employee is a VERIFIED employee if they are approved
   WHERE employee.user_id = user_id_p
+    AND employee.is_approved = true
   LIMIT 1;
 
   RETURN(is_user_employee);
@@ -1348,7 +1354,7 @@ CALL insert_employee(CURDATE(), 60000,
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 1 because nick rizzo is the first user
     -- 2nd is library id - 1 because it can be seen above
-    1, 1);
+    1, 1, true);
 
 CALL insert_user(
   "Matt", "Rizzo",
@@ -1360,8 +1366,13 @@ CALL insert_employee(CURDATE(), 55000,
     -- NOTE: both of these ONLY work because it is being done manually.
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 2nd user to be added
+<<<<<<< HEAD
     -- 2nd is library id
     2, 4);
+=======
+    -- 2nd is library id
+    2, 4, true);
+>>>>>>> [feat] Added is_approved to table and integrated with is_employee check in python
 
 CALL insert_user(
   "Domenic", "Privitera",
@@ -1375,7 +1386,7 @@ CALL insert_employee(CURDATE(), 70000,
     -- Registration of actual emplyees via the application will handle this
     -- First is user id - 3rd user to be added
     -- 2nd is library id
-    3, 6);
+    3, 6, true);
 
 -- ##### ADD some BOOKS ####
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
