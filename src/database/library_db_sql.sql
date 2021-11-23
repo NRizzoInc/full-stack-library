@@ -325,6 +325,7 @@ DELIMITER ;
 
 -- CALL place_hold(1, "Moby Dick", 1, 2); -- lib_id = 2 start off with only book checked out
 -- CALL place_hold(2, "Moby Dick", 1, 2); -- results in 2 holds in "Central Library..." (diff users)
+-- CALL place_hold(2, "Moby Dick", 1, 2); -- fails because user already has hold (same user/system)
 -- CALL place_hold(2, "Moby Dick", 3, 1); -- results in 3 holds (at least 1 at each lib)
 -- CALL search_for_book("Moby Dick", 1);
 
@@ -428,7 +429,12 @@ DELIMITER ;
 
 DROP FUNCTION IF EXISTS is_book_avail;
 DELIMITER $$
-CREATE FUNCTION is_book_avail(book_title_p VARCHAR(200), lib_sys_id_p INT, lib_id_p INT)
+CREATE FUNCTION is_book_avail(
+  book_title_p VARCHAR(200),
+  lib_sys_id_p INT,
+  lib_id_p INT,
+  user_id_p INT
+)
  RETURNS INT
  DETERMINISTIC
  READS SQL DATA
@@ -436,23 +442,44 @@ BEGIN
   -- returns a book_id of a copy of the book
   -- titled 'book_title_p' in the library system
   -- -1 if no book exists
+  -- -2 if user already checked out book
   DECLARE book_copy_avail INT;
   SET book_copy_avail = (
-    WITH avail_book_in_sys as (
-      SELECT book_inventory.* FROM book
+    WITH rel_book_in_sys AS (
+      SELECT book.title, book_inventory.book_id as rel_book_id, library.*  FROM book
       JOIN book_inventory ON book_inventory.isbn = book.isbn
-      JOIN bookshelf on bookshelf.bookshelf_id = book_inventory.bookshelf_id
-      JOIN bookcase on bookcase.bookcase_id = bookshelf.bookcase_id
-      JOIN library on library.library_id = bookcase.library_id
+      JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
+      JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
+      JOIN library ON library.library_id = bookcase.library_id
+    ),
+    avail_book_in_sys AS (
+      SELECT * FROM rel_book_in_sys
       WHERE
-        book.title = book_title_p AND
-        library.library_system = lib_sys_id_p AND
-        library.library_id = lib_id_p AND
-        book_inventory.book_id NOT IN (SELECT book_id FROM checked_out_books)
+        title = book_title_p AND
+        library_system = lib_sys_id_p AND
+        library_id = lib_id_p AND
+        rel_book_id NOT IN (SELECT book_id FROM checked_out_books)
       LIMIT 1
+    ),
+    already_checked_out AS (
+      SELECT * FROM rel_book_in_sys
+      -- join means all rows are of "checked out" books
+      JOIN checked_out_books ON checked_out_books.book_id = rel_book_id
+      WHERE
+        checked_out_books.user_id = user_id_p AND
+        title = book_title_p AND
+        library_system = lib_sys_id_p AND
+        library_id = lib_id_p
     )
-    SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.book_id ELSE -1 END)
-    FROM avail_book_in_sys
+    SELECT (CASE
+      -- if user already checked out book, count > 0 (if not select valid book_id)
+      WHEN COUNT(*) > 0 THEN -2 ELSE (
+        SELECT (CASE WHEN COUNT(*) > 0 THEN avail_book_in_sys.rel_book_id ELSE -1 END)
+        FROM avail_book_in_sys
+      ) END
+    )
+    FROM already_checked_out -- should be empty if none checked out already
+      
   );
 
   RETURN(book_copy_avail);
@@ -510,7 +537,11 @@ CREATE PROCEDURE checkout_book(
   IN lib_id_p INT
 ) checkout_label:BEGIN
   -- given user_id, book_title, lib_sys_id, & lib_id -> checkout book
-  -- RETURN: (1, due_datetime) = success, -1 = no copies avail, else = failure
+  -- RETURN: {rtncode: <code>, due_datetime(if success): <datetime> }
+  -- code 1:  Success
+  -- code -1: no copies available
+  -- code -2: user already has book checked out
+  -- code 0: other failure
   -- modify checked_out_books & user_hist tables
   DECLARE checkout_length_days INT;
   DECLARE checkout_datetime DATETIME;
@@ -526,9 +557,9 @@ CREATE PROCEDURE checkout_book(
   END;
 
   -- function return -1 if no coopies of the book can be checked out
-  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p);
-  IF avail_book_id = -1 THEN
-    SELECT -1 as "rtncode", null as "due_date";
+  SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p, user_id_p);
+  IF avail_book_id < 0 THEN
+    SELECT avail_book_id as "rtncode", null as "due_date";
     LEAVE checkout_label;
   END IF;
 
@@ -568,6 +599,7 @@ CREATE PROCEDURE place_hold(
   -- returns {rtncode: <code>}
   -- code = 0: user already placed a hold on that book at that library
   -- code = 1: success
+  -- code = 2: user already has the book checked out
 
   -- get isbn from title
   DECLARE book_isbn VARCHAR(17);
@@ -583,6 +615,24 @@ CREATE PROCEDURE place_hold(
     WHERE (lib_sys_id_p = holds.lib_sys_id AND user_id = user_id_p AND holds.isbn = book_isbn)
   ) THEN
     SELECT 0 as rtncode;
+    LEAVE place_hold_label;
+  END IF;
+
+  -- make sure user doesnt have this book checked out already
+  IF EXISTS (
+    SELECT * FROM checked_out_books
+    JOIN book_inventory ON book_inventory.book_id = checked_out_books.book_id
+    JOIN book ON book.isbn = book_inventory.isbn
+    JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
+    JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
+    JOIN library ON library.library_id = bookcase.library_id
+    WHERE (
+      lib_sys_id_p = library.library_system AND
+      checked_out_books.user_id = user_id_p AND
+      book_inventory.isbn = book_isbn
+    )
+  ) THEN
+    SELECT 2 as rtncode;
     LEAVE place_hold_label;
   END IF;
 
