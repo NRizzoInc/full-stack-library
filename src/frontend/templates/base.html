@@ -14,11 +14,10 @@
     <script type="module" src="../static/js/register.js"></script>
     <script type="module" src="../static/js/utils.js"></script>
 </head>
-<body>
-    <!-- for colors: https://bulma.io/documentation/helpers/color-helpers/ -->
-    <div class="hero is-fullheight" style="background-color:#C4FCEF;">
+<body class="has-navbar-fixed-top" style="background-color:#C4FCEF;">
+    <div class="hero is-fullheight">
         <div class="hero-head">
-            <nav class="navbar" role="navigation" aria-label="main navigation">
+            <nav class="navbar is-fixed-top has-background-grey-light" role="navigation" aria-label="main navigation">
                 <div class="navbar-brand">
                     <a class="navbar-item" href="{{ url_for('index') }}">
                       <img src="../static/images/library_icon.png">
