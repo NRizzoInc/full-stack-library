@@ -10,7 +10,7 @@ from flask_login import UserMixin
 #--------------------------------OUR DEPENDENCIES--------------------------------#
 
 class User(UserMixin):
-    def __init__(self, userId, libCardNum):
+    def __init__(self, userId, libCardNum, is_employee : bool):
         """
             Custom user class that extends the expected class from LoginManager
             \n@Brief: Initializes a User with the most basic info needed
@@ -19,5 +19,8 @@ class User(UserMixin):
         """
         # store the user's id for use when object is accessed (via 'current_user')
         # they can use the id for more queries
-        self.id = userId
+        self.id = int(userId)
         self.lib_card_num = libCardNum
+
+        # Used when determining view / permissions
+        self.is_employee = is_employee

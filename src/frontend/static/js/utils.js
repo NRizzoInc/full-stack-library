@@ -31,3 +31,14 @@
         return res;
     }
 }
+
+export function getTodayDate()
+{
+    // Inspired by https://stackoverflow.com/a/12347050/14810215
+    // the time might not be right based on the time zone
+    const now = new Date();
+    const day = ("0" + now.getDate()).slice(-2);
+    const month = ("0" + (now.getMonth() + 1)).slice(-2);
+    const today = now.getFullYear()+"-"+(month)+"-"+(day) ;
+    return(today);
+}

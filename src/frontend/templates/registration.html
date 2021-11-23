@@ -49,6 +49,31 @@
                         {% endfor %}
                     </div>
                 </div>
+                <!-- This should be hidden unless the user is an employee -->
+                <div id="employee-fields" hidden>
+                    <div class="control">
+                        {{ form.hire_date.label(class="label") }}
+                        {{ form.hire_date(class="input is-medium") }}
+                        {% for error in form.hire_date.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                    <div class="control">
+                        {{ form.salary.label(class="label") }}
+                        {{ form.salary(class="input is-medium") }}
+                        {% for error in form.salary.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                    <div class="control">
+                        {{ form.job_role.label(class="label") }}
+                        {{ form.job_role(class="input is-medium") }}
+                        {% for error in form.job_role.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- End of Employee Specific fields -->
 
                 <div class="field">
                     <div class="control" >

@@ -112,8 +112,29 @@ class DB_Manager():
                                 (fname, lname, library_id, dob, is_employee, username, pwd))
             return 1
         except Exception as error:
-            print("Error adding user: " + error)
+            print("Error adding user: " + str(error))
             return 0
+
+    def addEmployee(self,
+        hire_date: str,
+        salary: float,
+        job_role: str,
+        user_id: int,
+        library_id: int,
+        # This should almost ALWAYS be false, but include just in case
+        # approval is usually done after registration in employee_actions
+        is_approved : bool
+        ) -> int:
+        """Adds an employee. Note: MUST be called AFTER a successful `addUser`.
+        \n:return - 1 on success, -1 on failure"""
+        try:
+            res = self.cursor.execute("call insert_employee(%s, %s, %s, %s, %s, %s)",
+                                    (hire_date, salary, job_role, user_id, library_id, is_approved))
+            return 1
+        except Exception as error:
+            print("Error adding employee: " + str(error))
+            return -1
+
 
     def updatePwd(self, username: str, pwd: str) -> bool:
         """Updates a user's password (with 'username'). NOTE: Only call after validation. Return True = success"""
@@ -226,9 +247,9 @@ class DB_Manager():
         except:
             return ""
 
-    def get_lib_name_from_id(self, sys_id: int) -> str:
+    def get_lib_name_from_id(self, lib_id: int) -> str:
         try:
-            self.cursor.execute("select get_lib_name_from_id(%s)", (sys_id))
+            self.cursor.execute("select get_lib_name_from_id(%s)", (lib_id))
             lib_name = list(self.cursor.fetchone().values())[0]
             return str(lib_name)
         except:
@@ -243,7 +264,8 @@ class DB_Manager():
             # Result is a list of dictionaries where the key's are repeated
             search_res = self.cursor.fetchall()
             return search_res
-        except:
+        except Exception as err:
+            print("Failed to search for book: " + str(err))
             return None
 
     def search_lib_sys_catalog(self, lib_sys_id: int) -> Optional[List[Dict]]:
@@ -256,7 +278,7 @@ class DB_Manager():
         except:
             return None
 
-    def get_sys_id_from_user_id(self, user_id) -> Optional[int]:
+    def get_lib_sys_id_from_user_id(self, user_id) -> Optional[int]:
         """Given a user's id, returns the id of the library system"""
         try:
             self.cursor.execute("select get_lib_sys_id_from_user_id(%s)", (user_id))
@@ -274,6 +296,16 @@ class DB_Manager():
         except Exception as err:
             print(f"Failed to get lib card num by user id: {err}")
 
+    def get_is_user_employee(self, user_id) -> bool:
+        """Returns true if the user with the given id is an employee, false otherwise"""
+        try:
+            self.cursor.execute("select get_is_user_employee(%s)", (user_id))
+            is_employee = list(self.cursor.fetchone().values())[0]
+            return bool(is_employee)
+        except Exception as err:
+            print(f"Failed to determine if user with id {user_id} is an employee: {err}")
+            return False
+
     def get_card_num_by_username(self, username) -> Optional[int]:
         """Returns a user's library card# or None if user doesnt exist. Call AFTER addUser()"""
         try:
@@ -283,6 +315,105 @@ class DB_Manager():
         except Exception as err:
             print(f"Failed to get lib card num by username: {err}")
             return None
+
+    def checkout_book(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> dict:
+        """Checkout a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns:
+            dict: {
+                rtncode: 1 (success), -1 (no copies available), else failure
+                due_date: Optional[datetime]
+            }
+        """
+
+        try:
+            self.cursor.execute("call checkout_book(%s, %s, %s, %s)",
+                                (user_id, book_title, lib_sys_id, lib_id))
+            # 1 = success, -1 = no copies avail, -2 = book_id already checked out, else = failure
+            # print(self.cursor._last_executed)
+            res_dict = self.cursor.fetchone()
+            return res_dict
+        except Exception as err:
+            raise Exception(f"Failed to checkout book: {err}")
+
+    def place_hold(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> Dict[str, int]:
+        """Places a hold on a book with 'book_title' for 'user_id'
+
+        Args:
+            user_id (int): The user's id
+            book_title (str): The book's title
+            lib_sys_id (int): The id for the library system to search within
+            lib_id (int): The id of the library the user belongs to
+
+        Raises:
+            Exception: Basic exception with a string detailing any non-expected errors
+
+        Returns: {rtncode: <code>}
+            code = 0: user already placed a hold on that book at that library
+            code = 1: success
+        """
+        try:
+            self.cursor.execute("call place_hold(%s, %s, %s, %s)",
+                                (user_id, book_title, lib_sys_id, lib_id))
+            hold_res_dict = self.cursor.fetchone()
+            return hold_res_dict
+        except Exception as err:
+            raise Exception(f"Failed to checkout book: {err}")
+
+    def get_pending_employees(self, employee_user_id : int) -> Optional[List[Dict]]:
+        """Given an employee's user_id, find all employees pending approval at their library"""
+        try:
+            self.cursor.execute("call get_pending_employees(%s)", employee_user_id)
+            # Result is a list of dictionaries where the key's are repeated
+            pending_employee_list = self.cursor.fetchall()
+            return pending_employee_list
+        except Exception as err:
+            raise Exception(f"Failed to find pending employees: {err}")
+
+    def approve_employee(self, employee_id : int) -> bool:
+        try:
+            self.cursor.execute("call approve_employee(%s)", employee_id)
+            return list(self.cursor.fetchall())
+        except Exception as err:
+            raise Exception(f"Failed to approve an employee: {err}")
+
+    def deny_employee_approval(self, employee_id : int) -> bool:
+        try:
+            self.cursor.execute("call deny_employee_approval(%s)", employee_id)
+            return list(self.cursor.fetchall())
+        except Exception as err:
+            raise Exception(f"Failed to deny an employee's approval: {err}")
+
+    def add_new_book(self,
+        title : str,
+        lib_id : int,
+        isbn : str,
+        author : str,
+        publisher : str,
+        is_audio_book : bool,
+        num_pages : int,
+        checkout_length_days : int,
+        book_dewey: float,
+        late_fee_per_day: float) -> bool:
+        """Used by employees to add a new book to a library.
+        \n:return - 1 on success, -1 on failure"""
+        try:
+            res = self.cursor.execute("call add_new_book(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                                    (title, lib_id, isbn, author, publisher, is_audio_book, num_pages,
+                                    checkout_length_days, book_dewey, late_fee_per_day))
+            return 1
+        except Exception as error:
+            print("Error adding new book: " + str(error))
+            return -1
 
 
 if __name__ == '__main__':

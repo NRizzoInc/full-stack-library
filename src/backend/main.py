@@ -12,7 +12,7 @@ import getpass
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import flask
-from flask import Flask, templating, render_template, request, redirect, flash, url_for, jsonify
+from flask import Flask, session, render_template, request, redirect, flash, url_for, jsonify
 import werkzeug.serving # needed to make production worthy app that's secure
 
 # decorate app.route with "@login_required" to make sure user is logged in before doing anything
@@ -23,12 +23,14 @@ from flask_login import login_user, current_user, login_required, logout_user
 #--------------------------------Project Includes--------------------------------#
 from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
+from pendingEmployeeTable import PendingEmployeeCell, PendingEmployeeTable, create_pending_employee_cells
 from catalogResultTable import CatalogResultTable, create_catalog_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
 from loginForm import LoginForm
 from forgotPasswordForm import ForgotPwdForm
+from addBookForm import AddBookForm
 
 class WebApp(UserManager):
     def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
@@ -77,6 +79,7 @@ class WebApp(UserManager):
         self.createCheckoutPages()
         self.createUserPages()
         self.createInfoRoutes()
+        self.createEmployeeRoutes()
 
         # TODO: make a route for employees to add a new book to the library
 
@@ -95,25 +98,26 @@ class WebApp(UserManager):
         @login_required
         def search_book():
             form = BookSearchForm(request.form)
-            url = "/"
             # Get the library system of the user to search for
-            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
-            search_res = []
+            lib_sys_id = self.get_lib_sys_id_from_user_id(current_user.id)
+            BookSearchTableCells = []
             if lib_sys_id is not None:
                 raw_res_list = self.search_for_book(form.book_title.data, lib_sys_id)
-                search_res = create_search_cells(raw_res_list, form.book_title.data)
+                BookSearchTableCells = create_search_cells(raw_res_list, form.book_title.data)
 
             # If the list is empty, "No Items" is displayed
-            search_table = BookSearchTable(search_res)
+            search_table = BookSearchTable(BookSearchTableCells)
 
-            return render_template("searchResult.html", book_title_searched=form.book_title.data,
-                url=url, result_table=search_table)
+            return render_template("searchResult.html",
+                book_title_searched=form.book_title.data,
+                result_table=search_table
+            )
 
         @self._app.route("/get_lib_sys_catalog", methods=["GET"])
         @login_required
         def get_lib_sys_catalog():
             lib_sys_name = self.get_lib_sys_name_from_user_id(current_user.id)
-            lib_sys_id = self.get_sys_id_from_user_id(current_user.id)
+            lib_sys_id = self.get_lib_sys_id_from_user_id(current_user.id)
             catalog_dict = self.search_lib_sys_catalog(lib_sys_id)
             catalog_cells = []
             if catalog_dict is not None:
@@ -139,35 +143,68 @@ class WebApp(UserManager):
             return jsonify(list(id_name_dict.items()))
 
     def createCheckoutPages(self):
-        #TODO: make this a login required page (or at least have them login right now)
-        @self._app.route('/checkout', methods=['POST', 'GET'])
-        @login_required
-        def checkout():
-            title = request.args.get('book_title')
-            if request.method == 'GET':
-                return render_template("checkout.html", book_title=title)
-            elif request.method == "POST":
-                # TODO: make a query / call procedure for checking out a book
-                print(f"Checking out book {title}")
-                # TODO: call procedure to verify user is part of the library system the book belongs to
-                # TODO: call checkout procedure and return to home
-                # TODO: have due_date be part of procedure results
-                # TODO: have success_status include if they're on hold or not + details
-                return redirect(url_for("checkoutResult",
-                    success_status="Success",
-                    book_title=title,
-                    due_date="Sept 20, 2022"))
+        def handleCheckout(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
+            # checkout book w/ error check
+            try:
+                checkout_res_dict = self.checkout_book(user_id, book_title, lib_sys_id, lib_id)
+            except Exception as err:
+                print(f"Failed to checkout book err: {err}")
 
-        @self._app.route('/checkoutResult', methods=['GET'])
+            if(checkout_res_dict["rtncode"] != 1):
+                flash(f"Failed to checkout book!", "is-danger")
+                if checkout_res_dict["rtncode"] == -1:
+                    flash("No more copies available.", "is-danger")
+                return redirect(url_for("index"))
+
+            # TODO: have due_date be part of procedure results
+            # TODO: have success_status include number of people ahead of them on hold
+            flash("Successfully checked out: " + str(book_title), "is-success")
+            flash("Due Date: " + str(checkout_res_dict["due_date"]), "is-info")
+            return redirect(url_for("index"))
+
+        def handleHold(book_title: str, user_id: int, lib_sys_id: int, lib_id: int):
+            # place hold on book w/ error check
+            try:
+                hold_res_dict = self.place_hold(user_id, book_title, lib_sys_id, lib_id)
+            except Exception as err:
+                errMsg = "Failed to place hold on " + str(book_title)
+                print(f"{errMsg}: {err}")
+                flash(errMsg, "is-danger")
+                return redirect(url_for("index"))
+
+            if(hold_res_dict["rtncode"] == 0):
+                flash("Failed to place hold on book!", "is-danger")
+                flash("You already placed a hold on '"+str(book_title)+"' at this library", "is-warning")
+                return redirect(url_for("index"))
+
+            flash("Successfully placed hold on " + str(book_title), "is-success")
+            return redirect(url_for("index"))
+
+        @self._app.route('/get_book/<string:method>/<string:book_title>', methods=['POST'])
         @login_required
-        def checkoutResult():
-            title = request.args.get('book_title')
-            _due_date = request.args.get('due_date')
-            _success_status = request.args.get('success_status')
-            return render_template("checkoutResult.html",
-                                success_status = _success_status,
-                                book_title = title,
-                                due_date = _due_date)
+        def getbook(book_title: str, method: str):
+            """Actually checks out or places hold on a book based on url params
+            Args:
+                book_title (str): The title of the book
+                method (str): 'checkout' or 'hold'
+            """
+
+            is_checkout = method == "checkout"
+
+            user_id = current_user.id
+            lib_sys_id = self.get_lib_sys_id_from_user_id(user_id)
+            lib_id = self.get_lib_id_from_user_id(user_id)
+
+            # error check
+            if(book_title == None or lib_sys_id == None or lib_id == None):
+                flash("Invalid Checkout!", "is-danger")
+                # try to go back, else returns to index
+                return redirect(url_for("index"))
+
+            if is_checkout:
+                return handleCheckout(book_title, user_id, lib_sys_id, lib_id)
+            else: # is_hold
+                return handleHold(book_title, user_id, lib_sys_id, lib_id)
 
     def createUserPages(self):
         # https://flask-login.readthedocs.io/en/latest/#login-example
@@ -175,40 +212,46 @@ class WebApp(UserManager):
         def login():
             # dont login if already logged in
             if current_user.is_authenticated:
-                return redirect("/")
+                return redirect(url_for('index'))
 
             # to provide UserManager, use self which is a child of it
             form = LoginForm(self._app, self)
-            if not form.validate_on_submit():
+
+            if request.method == "GET":
+                return render_template('login.html', title="LibraryDB Login", form=form)
+            elif request.method == "POST" and not form.validate_on_submit():
                 # unsuccessful login
+                flash("Invalid Username or Password!", "is-danger")
                 return render_template('login.html', title="LibraryDB Login", form=form)
 
-            # username & pwd must be right at this point, so login
-            # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
-            # call loadUser() / @user_loader in userManager.py
-            user_id = self.getUserIdFromUsername(form.username.data)
-            lib_card_num = self.get_card_num_by_user_id(user_id)
-            user = User(user_id, lib_card_num)
-            login_user(user, remember=form.rememberMe.data)
+            elif request.method == "POST":
+                # username & pwd must be right at this point, so login
+                # https://flask-login.readthedocs.io/en/latest/#flask_login.LoginManager.user_loader
+                # call loadUser() / @user_loader in userManager.py
+                user_id = self.getUserIdFromUsername(form.username.data)
+                lib_card_num = self.get_card_num_by_user_id(user_id)
+                is_employee = self.get_is_user_employee(user_id)
+                user = User(user_id, lib_card_num, is_employee=is_employee)
+                login_user(user, remember=form.rememberMe.data)
 
-            # two seperate flashes for diff categories
-            flash("Successfully logged in!", "is-success")
-            flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
+                # two seperate flashes for diff categories
+                flash("Successfully logged in!", "is-success")
+                flash(f"Library Card Number: {lib_card_num}", "is-info") # format str safe bc not user input
 
             # route to original destination
             next = flask.request.args.get('next')
             isNextUrlBad = next == None or not is_safe_url(next, self._urls)
             if isNextUrlBad:
-                return redirect("/")
+                return redirect(url_for('index'))
             else:
                 return redirect(next)
 
             # on error, keep trying to login until correct
-            return redirect("/login")
+            return redirect(url_for("login"))
 
         @self._app.route("/register", methods=["GET", "POST"])
         def register():
-            if current_user.is_authenticated: return redirect("/")
+            if current_user.is_authenticated: return redirect(url_for('index'))
             # make the form for both GET & POST (to show and parse respectively)
             lib_systems_dict = self.get_all_library_systems()
             # Convert sys_id:sys_name -> (sys_id, sys_name)
@@ -230,6 +273,7 @@ class WebApp(UserManager):
 
             if request.method == "POST" and form.validate_on_submit():
                 # actually add user given info is valid/allowed
+                add_employee_res = None
                 add_res = self.addUser(
                     form.fname.data,
                     form.lname.data,
@@ -239,20 +283,59 @@ class WebApp(UserManager):
                     form.username.data,
                     form.password.data
                 )
+                # When the new user is an employee, add them as an employee as well
+                if form.is_employee.data == True and add_res == 1:
+                    # get the user and lib id created for them as a user
+                    new_user_id = self.getUserIdFromUsername(form.username.data)
+                    lib_id = self.get_lib_id_from_user_id(new_user_id)
+                    # Approval is done after the fact
+                    is_approved = False
+                    add_employee_res = self.addEmployee(
+                        form.hire_date.data,
+                        form.salary.data,
+                        form.job_role.data,
+                        new_user_id,
+                        lib_id,
+                        is_approved
+                    )
+
                 if (add_res == -1):
                     flash("Username already taken", "is-danger")
-                elif (add_res == 1):
+                elif (add_res == 1 and add_employee_res != -1):
                     card_num = self.get_card_num_by_username(form.username.data)
-                    flash("Congratulations, you are now a registered user! \
-                          Your library card number is " + str(card_num), "is-success")
+                    msg = "Congratulations, you are now a registered user! \
+                          Your library card number is " + str(card_num) + "."
+                    if(add_employee_res == 1):
+                        employee_msg = "You are a registered employee"
+                        if is_approved is False:
+                            employee_msg = employee_msg + " pending approval by a fellow coworker"
+                    flash(msg, " is-success")
+                    flash(employee_msg, " is-info")
                     return redirect(url_for("login"))
                 elif (add_res == 0):
                     flash('Registration Failed!', "is-danger")
+                elif (add_employee_res == -1):
+                    flash('Registration as user was successful! Registration as employee failed!', "is-danger")
             elif request.method == "POST":
                 print("Registration Validation Failed")
 
             # on GET or failure, reload
             return render_template('registration.html', title='LibraryDB Registration', form=form)
+
+        @self._app.route("/employee_actions", methods=["GET", "POST"])
+        @login_required
+        def employee_actions():
+            """Page used to allow employees to perform employee ONLY actions like add books"""
+            if not current_user.is_employee:
+                # Only employees can access this page
+                return redirect("/")
+            else:
+                user_id = current_user.id
+                pending_employee_table = self._get_pending_employee_table(user_id)
+
+                return render_template("employeeActions.html",
+                                       add_new_book_form=AddBookForm(),
+                                       pending_employee_table=pending_employee_table)
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
@@ -261,7 +344,7 @@ class WebApp(UserManager):
             if request.method == "POST" and form.validate_on_submit():
                 # actually change a user's login given info is valid/allowed
                 self.updatePwd(form.username.data, form.new_password.data)
-                return redirect("/")
+                return redirect(url_for('index'))
             elif request.method == "POST":
                 print("Forgot Password Reset Failed")
 
@@ -273,7 +356,84 @@ class WebApp(UserManager):
         def logout():
             logout_user()
             flash("Successfully logged out!", "is-success")
-            return redirect("/login")
+            return redirect(url_for("login"))
+
+        @self._app.route('/change_pending_employee_status/<string:action>/<int:employee_id>', methods=['POST'])
+        @login_required
+        def change_pending_employee_status(action: str, employee_id: int):
+            """If the employee is approved, update them in the table. Otherwise remove them from it"""
+            if not current_user.is_employee:
+                # Only verified employees can access this page
+                return redirect(url_for("index"))
+            if action == "approve":
+                self.approve_employee(employee_id)
+            elif action == "deny":
+                self.deny_employee_approval(employee_id)
+
+            # return to the previous page
+            return redirect(url_for("employee_actions",
+                                    add_new_book_form=AddBookForm(),
+                                    pending_employee_table=self._get_pending_employee_table(current_user.id)))
+
+    def createEmployeeRoutes(self):
+        @self._app.route("/add_new_book", methods=["GET", "POST"])
+        @login_required
+        def add_new_book():
+            """Page used to allow employees to perform employee ONLY actions like add books"""
+            if not current_user.is_employee:
+                # Only employees can access this page
+                return redirect("/")
+
+            # Otherwise, validate the form
+            add_book_form = AddBookForm(request.form)
+            user_id = current_user.id
+            library_id = self.get_lib_id_from_user_id(user_id)
+            library_name = self.get_lib_name_from_id(user_id)
+            if request.method == "POST" and add_book_form.validate_on_submit():
+                print(f"book_title = {add_book_form.book_title.data}, \
+                    \n library_id = {library_id}, \
+                    \n isbn = {add_book_form.isbn.data}, \
+                    \n author = {add_book_form.author.data}, \
+                    \n publisher = {add_book_form.publisher.data}, \
+                    \n is_audio_book = {add_book_form.is_audio_book.data}, \
+                    \n num_pages = {add_book_form.num_pages.data}, \
+                    \n checkout_length_days = {add_book_form.checkout_length_days.data}, \
+                    \n book_dewey = {add_book_form.book_dewey.data}, \
+                    \n late_fee_per_day = {add_book_form.late_fee_per_day.data}"
+                        )
+                add_book_res = self.add_new_book(
+                    title =                 add_book_form.book_title.data,
+                    lib_id =                library_id,
+                    isbn =                  add_book_form.isbn.data,
+                    author =                add_book_form.author.data,
+                    publisher =             add_book_form.publisher.data,
+                    is_audio_book =         add_book_form.is_audio_book.data,
+                    num_pages =             add_book_form.num_pages.data,
+                    checkout_length_days =  add_book_form.checkout_length_days.data,
+                    book_dewey =            add_book_form.book_dewey.data,
+                    late_fee_per_day =      add_book_form.late_fee_per_day.data
+                )
+
+                if (add_book_res == 1):
+                    msg = f"The book {add_book_form.book_title.data} was added to library {library_name}"
+                    flash(msg, " is-success")
+                    return redirect(url_for("login"))
+                elif (add_book_res == -1):
+                    flash(f'Failed to add the book {add_book_form.book_title.data} to library {library_name}!', "is-danger")
+
+            elif request.method == "POST":
+                flash("Add New Book Validation Failed", "is-danger")
+
+            # Return to the employee action page
+            return redirect(url_for("employee_actions",
+                                   add_new_book_form=add_book_form,
+                                   pending_employee_table=self._get_pending_employee_table(current_user.id)))
+
+    def _get_pending_employee_table(self, user_id):
+        """Util Function to prevent code duplication
+        \n:user_id the user_id of the employee that is taking actions"""
+        raw_pending_employee_res = self.get_pending_employees(user_id)
+        return PendingEmployeeTable(create_pending_employee_cells(raw_pending_employee_res))
 
     def printSites(self):
         print("Existing URLs:")
