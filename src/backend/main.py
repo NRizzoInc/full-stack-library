@@ -300,15 +300,16 @@ class WebApp(UserManager):
 
                 if (add_res == -1):
                     flash("Username already taken", "is-danger")
-                elif (add_res == 1):
+                elif (add_res == 1 and add_employee_res != -1):
                     card_num = self.get_card_num_by_username(form.username.data)
                     msg = "Congratulations, you are now a registered user! \
-                          Your library card number is " + str(card_num)
+                          Your library card number is " + str(card_num) + "."
                     if(add_employee_res == 1):
-                        msg = msg + "\nYou are a registered employee"
+                        employee_msg = "You are a registered employee"
                         if is_approved is False:
-                            msg = msg + " pending approval by a fellow coworker"
+                            employee_msg = employee_msg + " pending approval by a fellow coworker"
                     flash(msg, " is-success")
+                    flash(employee_msg, " is-info")
                     return redirect(url_for("login"))
                 elif (add_res == 0):
                     flash('Registration Failed!', "is-danger")

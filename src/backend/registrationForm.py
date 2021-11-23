@@ -114,7 +114,7 @@ class RegistrationForm(FlaskForm):
         """Salary must be a float compatible value"""
         errMsg = f"Salary must be a number. Do not include symbols or letters"
         try:
-            float_convert = int(field.data)
+            float_convert = float(field.data)
             if isinstance(float_convert, float):
                 return True
             else:

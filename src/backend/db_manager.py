@@ -128,7 +128,7 @@ class DB_Manager():
         """Adds an employee. Note: MUST be called AFTER a successful `addUser`.
         \n:return - 1 on success, -1 on failure"""
         try:
-            res = self.cursor.execute("call insert_employee(%s, %s, %s, %s, %s)",
+            res = self.cursor.execute("call insert_employee(%s, %s, %s, %s, %s, %s)",
                                     (hire_date, salary, job_role, user_id, library_id, is_approved))
             return 1
         except Exception as error:
