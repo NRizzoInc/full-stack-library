@@ -32,7 +32,7 @@
                         <div class="control">
                             {{ add_new_book_form.author.label(class="label") }}
                             {{ add_new_book_form.author(class="input is-medium", placeholder="Author") }}
-                            {% for error in add_new_book_form.isbn.errors %}
+                            {% for error in add_new_book_form.author.errors %}
                             <span style="color: red;">[{{ error }}]</span>
                             {% endfor %}
                         </div>
