@@ -425,9 +425,9 @@ class WebApp(UserManager):
                 flash("Add New Book Validation Failed", "is-danger")
 
             # Return to the employee action page
-            return render_template("employeeActions.html",
+            return redirect(url_for("employee_actions",
                                    add_new_book_form=add_book_form,
-                                   pending_employee_table=self._get_pending_employee_table(current_user.id))
+                                   pending_employee_table=self._get_pending_employee_table(current_user.id)))
 
     def _get_pending_employee_table(self, user_id):
         """Util Function to prevent code duplication
