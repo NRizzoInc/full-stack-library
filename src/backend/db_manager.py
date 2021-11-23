@@ -425,6 +425,25 @@ class DB_Manager():
             return -1
 
 
+    def get_user_checkouts(self, user_id: int) -> dict:
+        try:
+            self.cursor.execute("call get_user_checkouts(%s)", (user_id))
+            checkouts_res_dict = self.cursor.fetchall()
+            return checkouts_res_dict
+        except Exception as err:
+            raise Exception(f"Failed to get checked out books: {err}")
+
+    def get_checkout_book_id_from_user_title(self, user_id: int, book_title: str) -> int:
+        """Gets the book_id of 'book_title' checked out by 'user_id'. Returns -1 if error"""
+        try:
+            self.cursor.execute("SELECT get_checkout_book_id_from_user_title(%s,%s)",
+                                (user_id, book_title))
+            book_id_res = self.cursor.fetchone()
+            return book_id_res["book_id"] if "book_id" in book_id_res else -1
+        except Exception as err:
+            print(f"Failed to get checkout book_id: {err}")
+            return -1
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Library Database Python Connector")
     parser.add_argument(

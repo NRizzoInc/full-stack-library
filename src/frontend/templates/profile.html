@@ -1,7 +1,22 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h1 class="title">
-    Welcome, User!
-</h1>
-{% endblock %}
+<body>
+    {% block content %}
+
+    <div class="columns is-half is-centered">
+        <div class="control">
+            {% include "flash.html" %}
+        </div>
+    </div>
+
+    <h2>Displaying currently checked out books:</h2>
+    {{ checkouts_table }}
+
+    <div class="buttons is-centered">
+        <a href="{{ url_for('index') }}" class="button is-link">
+            Return Home
+        </a>
+    </div>
+
+    {% endblock %}
+</body>

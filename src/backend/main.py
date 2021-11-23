@@ -25,6 +25,7 @@ from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from pendingEmployeeTable import PendingEmployeeCell, PendingEmployeeTable, create_pending_employee_cells
 from catalogResultTable import CatalogResultTable, create_catalog_cells
+from profileCheckoutTable import ProfileCheckoutTable, create_profile_checkout_cells
 from user import User
 from userManager import UserManager
 from registrationForm import RegistrationForm
@@ -89,8 +90,17 @@ class WebApp(UserManager):
             return render_template("index.html", title="Library DB App", form=BookSearchForm())
 
         @self._app.route("/profile", methods=["GET"])
+        @login_required
         def profile():
-            return render_template("profile.html", title="Library DB Profile")
+
+            user_checkouts = self.get_user_checkouts(current_user.id)
+            checkout_cells = create_profile_checkout_cells(user_checkouts)
+            checkouts_table = ProfileCheckoutTable(checkout_cells)
+
+            return render_template("profile.html",
+                title="Library DB Profile",
+                checkouts_table=checkouts_table
+            )
 
 
     def createFormPages(self):
@@ -205,6 +215,21 @@ class WebApp(UserManager):
                 return handleCheckout(book_title, user_id, lib_sys_id, lib_id)
             else: # is_hold
                 return handleHold(book_title, user_id, lib_sys_id, lib_id)
+
+        @self._app.route('/returns/<string:book_title>', methods=['POST'])
+        @login_required
+        def returns(book_title: str):
+            """Route for returning a book"""
+            # NOTE: Dont decide which book to return based on untrusted
+            # user input (ie book_id which can be faked)
+            user_id = current_user.id
+            book_id = self.get_checkout_book_id_from_user_title(user_id, book_title)
+
+            # self.return_book(book_id, user_id)
+
+            flash("Successfully returned " + book_title, "is-success")
+            flash("TODO: actually implement return_book!!!", "is-warning")
+            return redirect(url_for("profile"))
 
     def createUserPages(self):
         # https://flask-login.readthedocs.io/en/latest/#login-example
