@@ -640,6 +640,29 @@ CREATE PROCEDURE place_hold(
 END $$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS cancel_hold;
+DELIMITER $$
+CREATE PROCEDURE cancel_hold(IN user_id_in INT, IN hold_id_in INT)
+BEGIN
+  -- if hold doesnt exist, return 0
+  -- if exists and canceled, return 1
+  DECLARE rtncode INT;
+
+  IF EXISTS (SELECT * FROM holds WHERE user_id = user_id_in AND hold_id = hold_id_in) THEN
+    DELETE FROM holds WHERE user_id = user_id_in AND hold_id = hold_id_in;
+    SET rtncode = 1;
+  ELSE
+    SET rtncode = 0;
+  END IF;
+
+
+  COMMIT;
+  SELECT rtncode;
+
+END $$
+DELIMITER ;
+
+
 -- returns a book to the library
 -- CALL return_book(4, 1); -- return moby dick from nickrizzo's account
 DROP PROCEDURE IF EXISTS return_book;

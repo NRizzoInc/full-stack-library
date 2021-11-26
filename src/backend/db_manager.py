@@ -377,6 +377,17 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 
+    def cancel_hold(self, user_id: int, hold_id: int):
+        """Return 1 on success, 0 if hold doesnt exist, -1 on error"""
+        try:
+            self.cursor.execute("call cancel_hold(%s, %s)", (user_id, hold_id))
+            cancel_hold_dict = self.cursor.fetchone()
+            cancel_hold_ret = cancel_hold_dict["rtncode"]
+            return cancel_hold_ret
+        except Exception as err:
+            print(f"Failed to cancel hold: {err}")
+            return -1
+
     def get_pending_employees(self, employee_user_id : int) -> Optional[List[Dict]]:
         """Given an employee's user_id, find all employees pending approval at their library"""
         try:

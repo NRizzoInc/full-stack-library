@@ -259,10 +259,16 @@ class WebApp(UserManager):
         @login_required
         def cancel_hold(hold_id: int):
             """Route for cancelling a hold"""
-            # self.cancel_hold(hold_id)
+            # make sure authorized user is making the cancel
+            user_id = current_user.id
+            cancel_hold_rtn = self.cancel_hold(user_id, hold_id)
+            if cancel_hold_rtn == 1:
+                flash("Successfully cancelled hold", "is-success")
+            elif cancel_hold_rtn == 0:
+                flash("Requested hold does not exist", "is-warning")
+            else:
+                flash("Failed to cancel hold", "is-error")
 
-            flash("Successfully cancelled hold", "is-success")
-            flash("TODO: actually implement cancel_hold!!!", "is-warning")
             return redirect(url_for("profile"))
 
 
