@@ -343,6 +343,15 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to checkout book: {err}")
 
+    def return_book(self, book_id: int, user_id: int) -> int:
+        """Returns 0 if error, 1 if success"""
+        try:
+            self.cursor.execute("call return_book(%s, %s)", (book_id, user_id))
+            return 1
+        except Exception as err:
+            print(f"Failed to return book: {err}")
+            return 0
+
     def place_hold(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> Dict[str, int]:
         """Places a hold on a book with 'book_title' for 'user_id'
 

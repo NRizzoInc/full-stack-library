@@ -40,7 +40,7 @@ class LoginForm(FlaskForm, UserManager):
         # check that username is not already taken
         if not self.user_manager.doesUsernameExist(form.username.data):
             errMsg = "Invalid username or password"
-            flash(errMsg, "is-danger")
+            # flash(errMsg, "is-danger")
             raise StopValidation(message=errMsg) # prints under box
         else:
             return True

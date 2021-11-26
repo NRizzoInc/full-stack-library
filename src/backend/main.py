@@ -84,8 +84,6 @@ class WebApp(UserManager):
         self.createInfoRoutes()
         self.createEmployeeRoutes()
 
-        # TODO: make a route for employees to add a new book to the library
-
     def createLandingPage(self):
         @self._app.route("/", methods=["GET"])
         def index():
@@ -185,7 +183,6 @@ class WebApp(UserManager):
 
                 return redirect(url_for("index"))
 
-            # TODO: have due_date be part of procedure results
             # TODO: have success_status include number of people ahead of them on hold
             flash("Successfully checked out: " + str(book_title), "is-success")
             flash("Due Date: " + str(checkout_res_dict["due_date"]), "is-info")
@@ -247,11 +244,15 @@ class WebApp(UserManager):
             # user input (ie book_id which can be faked)
             user_id = current_user.id
             book_id = self.get_checkout_book_id_from_user_title(user_id, book_title)
+            if book_id == -1:
+                flash("Failed to get the checked out book id for " + book_title, "is-warning")
+                return redirect(url_for("profile"))
 
-            # self.return_book(book_id, user_id)
+            if(self.return_book(book_id, user_id)):
+                flash("Successfully returned " + book_title, "is-success")
+            else:
+                flash("Failed to return " + book_title, "is-danger")
 
-            flash("Successfully returned " + book_title, "is-success")
-            flash("TODO: actually implement return_book!!!", "is-warning")
             return redirect(url_for("profile"))
 
         @self._app.route('/cancel_hold/<int:hold_id>', methods=['POST'])

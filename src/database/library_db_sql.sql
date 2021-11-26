@@ -294,25 +294,19 @@ CREATE FUNCTION library_id_from_book(book_id_p INT)
 BEGIN
  DECLARE library_id_out INT;
  WITH desired_book AS(
-   SELECT * FROM book
-    WHERE (book_id = book_id_p)),
-
+    SELECT book_inventory.*, book.title FROM book_inventory 
+    JOIN book ON book.isbn = book_inventory.isbn
+    WHERE book_inventory.book_id = book_id_p
+  ),
  -- joining the desired_book and bookcase_id from bookshelf table
   desired_book_bs AS (
-  SELECT title, desired_book.bookshelf_id, bookshelf.bookcase_id
-   FROM desired_book JOIN bookshelf
-   USING (bookshelf_id)),
+    SELECT title, bookcase.library_id, desired_book.bookshelf_id, bookshelf.bookcase_id
+    FROM desired_book
+    JOIN bookshelf USING (bookshelf_id)
+    JOIN bookcase USING (bookcase_id)
+  )
 
-   -- joining desired_book_bs and library_name/ library_id from library table
-   desired_book_lib AS (
-   SELECT desired_book_bs.title, desired_book_bs.bookshelf_id,
-            desired_book_bs.bookcase_id,
-            library.library_name,
-            library.library_id
-    FROM desired_book_bs JOIN library
-    USING (library_id))
-
-    SELECT library_id INTO library_id_out FROM desired_book_lib;
+  SELECT library_id INTO library_id_out FROM desired_book_bs;
 
  RETURN(library_id_out);
 END $$
@@ -647,63 +641,67 @@ END $$
 DELIMITER ;
 
 -- returns a book to the library
+-- CALL return_book(4, 1); -- return moby dick from nickrizzo's account
+DROP PROCEDURE IF EXISTS return_book;
 DELIMITER $$
 CREATE PROCEDURE return_book(IN book_id_p INT, IN user_id_p INT)
 BEGIN
-DECLARE book_library_id INT;
-DECLARE new_checkout_user_id INT;
-DECLARE checkout_length_days INT;
-DECLARE due_datetime DATE;
-DECLARE isbn_from_p VARCHAR(17);
+  DECLARE book_library_id INT;
+  DECLARE new_checkout_user_id INT;
+  DECLARE checkout_length_days INT;
+  DECLARE due_datetime DATE;
+  DECLARE isbn_from_p VARCHAR(17);
+  -- id of user who's had the longest hold on isbn and will check it out
+  DECLARE user_id_checkout_hold INT;
 
--- Grabs the ISBN of the book being returned
-SELECT isbn FROM book_inventory WHERE (book_id = book_id_P) 
+  -- Grabs the ISBN of the book being returned
+  SELECT isbn FROM book_inventory WHERE (book_inventory.book_id = book_id_p) 
     INTO isbn_from_p;
     
--- A function to get the library_id for a specific book
-SELECT library_id_from_book(book_id_P) INTO book_library_id;
+  -- A function to get the library_id for a specific book
+  SELECT library_id_from_book(book_id_p) INTO book_library_id;
 
  -- Adds the return date to the user_Hist
-UPDATE user_hist
+ UPDATE user_hist
  SET date_returned = now()
  WHERE ((user_id_p = user_id) AND
         (book_id_p = book_borrowed));
 
  -- Delete row from checked_out_Books
  DELETE FROM checked_out_books
-  WHERE ((user_id_p = user_id) AND
-        (book_id_p = book_id));
+  WHERE ((user_id_p = checked_out_books.user_id) AND
+        (book_id_p = checked_out_books.book_id));
  -- TODO how to handle a user who has placed a hold on the book being checked in
  -- SELECT * FROM holds WHERE (book_id_p =
 
  -- Checks out the book for the next person on hold, if one exists
  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
-IF EXISTS (SELECT * FROM holds where (isbn_from_p = isbn)) THEN
+IF EXISTS (SELECT * FROM holds WHERE (isbn_from_p = isbn)) THEN
   SET new_checkout_user_id = (
     SELECT user_id FROM holds
     WHERE (isbn_from_p = isbn)
     ORDER BY hold_start_date ASC LIMIT 1
   );
-  SET checkout_length_days  = (SELECT checkout_length_days FROM book_inventory WHERE book_id_p = book_id);
+  SET checkout_length_days = (SELECT checkout_length_days FROM book_inventory WHERE book_id_p = book_inventory.book_id);
   SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
 
   INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
   VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
 
-      -- Updates user_hist
-    INSERT INTO user_hist
-    VALUES (DEFAULT,
-            (SELECT user_id FROM holds
-                WHERE (book_id_p = book_id)
-                ORDER BY hold_start_date ASC LIMIT 1)
-            , book_id_p, book_library_id
-    , now(), null);
+  -- Updates user_hist
+  SET user_id_checkout_hold = (
+    SELECT user_id FROM holds
+    WHERE (holds.isbn = isbn_from_p)
+    ORDER BY hold_start_date ASC LIMIT 1
+  );
+
+  INSERT INTO user_hist (loan_id, user_id, book_borrowed, library_id, date_borrowed, date_returned)
+  VALUES (DEFAULT, user_id_checkout_hold, book_id_p, book_library_id, now(), null);
 
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
  END IF;
 END $$
--- resets the DELIMETER
 DELIMITER ;
 
 
@@ -1665,6 +1663,12 @@ CALL insert_employee(CURDATE(), 70000,
     -- First is user id - 3rd user to be added
     -- 2nd is library id
     3, 6, true);
+
+CALL insert_user(
+  "fname", "lname",
+  1, -- library_id = 1 (Charlestown - same as nickrizzo needed to test hold_book)
+  CURDATE(), true, "holdacct", "pwd"
+);
 
 -- ##### ADD some BOOKS ####
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
