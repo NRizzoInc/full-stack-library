@@ -1189,6 +1189,56 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
+CREATE PROCEDURE get_user_hist_from_id(IN in_user_id INT)
+BEGIN
+    -- Given a user id, return their history of checkout
+    -- Return:
+    -- book title checked out, date checked out, return date (null or the day), overdue fee ( have to calculate it), library name
+    -- preferably in sorted order of checked out date
+    
+    WITH get_loan_hist AS (
+        SELECT loan_id, book_borrowed AS borrowed_book_id, library_id, date_borrowed, date_returned
+        FROM user_hist 
+        WHERE user_id = in_user_id
+    ),
+    -- use the borrowed_book_id (FK to inventory) to get its isbn and from there, its title in book
+    get_book_name AS (
+        SELECT get_loan_hist.*, book.title, 
+            -- If the book has yet to be returned, assume it will be today when calculating costs
+            DATEDIFF(coalesce(get_loan_hist.date_returned, CURDATE()), date_borrowed) AS days_checked_out,
+            book_inventory.checkout_length_days AS max_checkout_len_days,
+            book_inventory.late_fee_per_day
+        FROM get_loan_hist
+        LEFT OUTER JOIN book_inventory ON get_loan_hist.borrowed_book_id = book_inventory.book_id
+        LEFT OUTER JOIN book ON book_inventory.isbn = book.isbn
+    ),
+    -- Get the library name from the id
+    get_lib_name AS (
+        SELECT get_book_name.*, library.library_name
+        FROM get_book_name
+        LEFT JOIN library ON get_book_name.library_id = library.library_id
+    ),
+    calc_overdue_costs AS (
+        SELECT get_lib_name.library_name, get_lib_name.date_borrowed, 
+            get_lib_name.date_returned, get_lib_name.title, 
+            -- if the days checked out is less than the allowed checkout length, cost is 0
+            CASE 
+                WHEN days_checked_out < max_checkout_len_days THEN 0
+                ELSE (days_checked_out - max_checkout_len_days) * late_fee_per_day
+            END AS overdue_fee_dollars
+        FROM get_lib_name
+    )
+    
+
+    SELECT *
+    FROM calc_overdue_costs
+    ORDER BY calc_overdue_costs.date_borrowed DESC;
+
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
 CREATE FUNCTION is_lib_in_sys(in_lib_id INT, in_lib_sys_id INT)
  RETURNS BOOL
  DETERMINISTIC
