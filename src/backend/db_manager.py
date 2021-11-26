@@ -349,7 +349,7 @@ class DB_Manager():
             self.cursor.execute("call return_book(%s, %s)", (book_id, user_id))
             return 1
         except Exception as err:
-            print(f"Failed to return book: {err}")
+            print(err)
             return 0
 
     def place_hold(self, user_id: int, book_title: str, lib_sys_id: int, lib_id: int) -> Dict[str, int]:

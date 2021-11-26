@@ -654,6 +654,15 @@ BEGIN
   -- id of user who's had the longest hold on isbn and will check it out
   DECLARE user_id_checkout_hold INT;
 
+  -- use transaction bc multiple inserts and should rollback on error
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    SHOW ERRORS;
+    ROLLBACK;
+    SELECT "Failed to return book, rolling back";
+    CALL raise_error;
+  END;
+
   -- Grabs the ISBN of the book being returned
   SELECT isbn FROM book_inventory WHERE (book_inventory.book_id = book_id_p) 
     INTO isbn_from_p;
@@ -698,6 +707,7 @@ IF EXISTS (SELECT * FROM holds WHERE (isbn_from_p = isbn)) THEN
   INSERT INTO user_hist (loan_id, user_id, book_borrowed, library_id, date_borrowed, date_returned)
   VALUES (DEFAULT, user_id_checkout_hold, book_id_p, book_library_id, now(), null);
 
+  COMMIT;
  -- We will register the user to whatever copy of the book that has been checked out
  -- for the longest period of time, assuming that it will be the next copy returned
  END IF;
