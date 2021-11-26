@@ -440,6 +440,14 @@ class DB_Manager():
         except Exception as err:
             raise Exception(f"Failed to get book holds: {err}")
 
+    def get_user_history_from_id(self, user_id: int) -> dict:
+        try:
+            self.cursor.execute("call get_user_hist_from_id(%s)", (user_id))
+            hist_res_dict = self.cursor.fetchall()
+            return hist_res_dict
+        except Exception as err:
+            raise Exception(f"Failed to get user history: {err}")
+
     def get_checkout_book_id_from_user_title(self, user_id: int, book_title: str) -> int:
         """Gets the book_id of 'book_title' checked out by 'user_id'. Returns -1 if error"""
         try:

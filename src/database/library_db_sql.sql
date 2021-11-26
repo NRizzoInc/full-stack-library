@@ -1189,6 +1189,57 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
+CREATE PROCEDURE get_user_hist_from_id(IN in_user_id INT)
+BEGIN
+    -- Given a user id, return their history of checkout
+    -- Return:
+    -- book title checked out, date checked out, return date (null or the day), overdue fee ( have to calculate it), library name
+    -- preferably in sorted order of checked out date
+    
+    WITH get_loan_hist AS (
+        SELECT loan_id, book_borrowed AS borrowed_book_id, library_id, date_borrowed, date_returned
+        FROM user_hist 
+        WHERE user_id = in_user_id
+    ),
+    -- use the borrowed_book_id (FK to inventory) to get its isbn and from there, its title in book
+    get_book_name AS (
+        SELECT get_loan_hist.*, book.title, 
+            -- If the book has yet to be returned, assume it will be today when calculating costs
+            DATEDIFF(coalesce(get_loan_hist.date_returned, CURDATE()), date_borrowed) AS days_checked_out,
+            book_inventory.checkout_length_days AS max_checkout_len_days,
+            book_inventory.late_fee_per_day
+        FROM get_loan_hist
+        LEFT OUTER JOIN book_inventory ON get_loan_hist.borrowed_book_id = book_inventory.book_id
+        LEFT OUTER JOIN book ON book_inventory.isbn = book.isbn
+    ),
+    -- Get the library name from the id
+    get_lib_name AS (
+        SELECT get_book_name.*, library.library_name
+        FROM get_book_name
+        LEFT JOIN library ON get_book_name.library_id = library.library_id
+    ),
+    calc_overdue_costs AS (
+        SELECT get_lib_name.library_name, get_lib_name.date_borrowed, 
+            get_lib_name.date_returned, days_checked_out, get_lib_name.title, 
+            -- if the days checked out is less than the allowed checkout length, cost is 0
+            CASE 
+                WHEN days_checked_out < max_checkout_len_days THEN 0
+                ELSE (days_checked_out - max_checkout_len_days) * late_fee_per_day
+            END AS overdue_fee_dollars,
+            max_checkout_len_days, late_fee_per_day
+        FROM get_lib_name
+    )
+    
+
+    SELECT *
+    FROM calc_overdue_costs
+    ORDER BY calc_overdue_costs.date_borrowed DESC;
+
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
+DELIMITER $$
 CREATE FUNCTION is_lib_in_sys(in_lib_id INT, in_lib_sys_id INT)
  RETURNS BOOL
  DETERMINISTIC
@@ -1619,7 +1670,7 @@ CALL insert_employee(CURDATE(), 70000,
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
     1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
-    false, 1442, 14, 005.74, 10);
+    false, 1442, 2, 005.74, 10);
 
 -- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
