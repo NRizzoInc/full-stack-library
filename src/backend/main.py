@@ -24,6 +24,7 @@ from flask_login import login_user, current_user, login_required, logout_user
 from bookSearchForm import BookSearchForm
 from bookSearchTable import BookSearchTable, BookSearchCell, create_search_cells
 from pendingEmployeeTable import PendingEmployeeCell, PendingEmployeeTable, create_pending_employee_cells
+from userHistoryTable import UserHistoryTable, create_user_history_cells
 from catalogResultTable import CatalogResultTable, create_catalog_cells
 from profileCheckoutTable import ProfileCheckoutTable, create_profile_checkout_cells
 from profileHoldsTable import ProfileHoldsTable, create_profile_holds_cells
@@ -93,22 +94,28 @@ class WebApp(UserManager):
         @self._app.route("/profile", methods=["GET"])
         @login_required
         def profile():
-
+            user_id = current_user.id
             # get user's checked out books in table form
-            user_checkouts = self.get_user_checkouts(current_user.id)
+            user_checkouts = self.get_user_checkouts(user_id)
             checkout_cells = create_profile_checkout_cells(user_checkouts)
             checkouts_table = ProfileCheckoutTable(checkout_cells)
 
             # get user's holds in table form
             # ProfileHoldsTable, create_profile_holds_cells
-            user_holds = self.get_user_holds(current_user.id)
+            user_holds = self.get_user_holds(user_id)
             hold_cells = create_profile_holds_cells(user_holds)
             holds_table = ProfileHoldsTable(hold_cells)
+
+            # Get the user's history
+            user_hist = self.get_user_history_from_id(user_id)
+            user_hist_cells = create_user_history_cells(user_hist)
+            user_hist_table = UserHistoryTable(user_hist_cells)
 
             return render_template("profile.html",
                 title="Library DB Profile",
                 checkouts_table=checkouts_table,
-                holds_table=holds_table
+                holds_table=holds_table,
+                user_hist_table=user_hist_table
             )
 
 

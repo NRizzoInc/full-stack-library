@@ -1225,7 +1225,8 @@ BEGIN
             CASE 
                 WHEN days_checked_out < max_checkout_len_days THEN 0
                 ELSE (days_checked_out - max_checkout_len_days) * late_fee_per_day
-            END AS overdue_fee_dollars
+            END AS overdue_fee_dollars,
+            max_checkout_len_days
         FROM get_lib_name
     )
     
@@ -1673,7 +1674,7 @@ CALL add_new_book("Database Systems - A Practical Approach to Design, Implementa
 
 -- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 10, 812.54, .3);
+    false, 704, 1, 812.54, .3);
 -- Have 2 copies of the same book in 1 library
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
     false, 704, 21, 812.54, .3);
