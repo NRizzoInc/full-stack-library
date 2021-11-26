@@ -462,8 +462,10 @@ class DB_Manager():
         try:
             self.cursor.execute("SELECT get_checkout_book_id_from_user_title(%s,%s)",
                                 (user_id, book_title))
+            # extrapolate book_id (the value) since "key" will be composition of query
             book_id_res = self.cursor.fetchone()
-            return book_id_res["book_id"] if "book_id" in book_id_res else -1
+            book_id = list(book_id_res.values())[0]
+            return book_id
         except Exception as err:
             print(f"Failed to get checkout book_id: {err}")
             return -1
