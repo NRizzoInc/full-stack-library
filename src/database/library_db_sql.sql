@@ -671,46 +671,45 @@ BEGIN
   SELECT library_id_from_book(book_id_p) INTO book_library_id;
 
  -- Adds the return date to the user_Hist
- UPDATE user_hist
- SET date_returned = now()
- WHERE ((user_id_p = user_id) AND
-        (book_id_p = book_borrowed));
+  UPDATE user_hist
+  SET date_returned = now()
+  WHERE ((user_id_p = user_id) AND
+          (book_id_p = book_borrowed));
 
- -- Delete row from checked_out_Books
- DELETE FROM checked_out_books
+  -- Delete row from checked_out_Books
+  DELETE FROM checked_out_books
   WHERE ((user_id_p = checked_out_books.user_id) AND
-        (book_id_p = checked_out_books.book_id));
- -- TODO how to handle a user who has placed a hold on the book being checked in
- -- SELECT * FROM holds WHERE (book_id_p =
+          (book_id_p = checked_out_books.book_id));
 
- -- Checks out the book for the next person on hold, if one exists
- -- Otherwise, the book is return and ready to be checked out by whomever else wants it
-IF EXISTS (SELECT * FROM holds WHERE (isbn_from_p = isbn)) THEN
-  SET new_checkout_user_id = (
-    SELECT user_id FROM holds
-    WHERE (isbn_from_p = isbn)
-    ORDER BY hold_start_date ASC LIMIT 1
-  );
-  SET checkout_length_days = (SELECT checkout_length_days FROM book_inventory WHERE book_id_p = book_inventory.book_id);
-  SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
+  -- Checks out the book for the next person on hold, if one exists
+  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
+  -- We will register the user to whatever copy of the book that has been checked out
+  -- for the longest period of time, assuming that it will be the next copy returned
+  IF EXISTS (SELECT * FROM holds WHERE (isbn_from_p = isbn)) THEN
+    SET new_checkout_user_id = (
+      SELECT user_id FROM holds
+      WHERE (isbn_from_p = isbn)
+      ORDER BY hold_start_date ASC LIMIT 1
+    );
+    SET checkout_length_days = (SELECT checkout_length_days FROM book_inventory WHERE book_id_p = book_inventory.book_id);
+    SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
 
-  INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
-  VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
+    INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
+    VALUES                        (new_checkout_user_id, book_id_p, now(),         due_datetime);
 
-  -- Updates user_hist
-  SET user_id_checkout_hold = (
-    SELECT user_id FROM holds
-    WHERE (holds.isbn = isbn_from_p)
-    ORDER BY hold_start_date ASC LIMIT 1
-  );
+    -- Updates user_hist
+    SET user_id_checkout_hold = (
+      SELECT user_id FROM holds
+      WHERE (holds.isbn = isbn_from_p)
+      ORDER BY hold_start_date ASC LIMIT 1
+    );
 
-  INSERT INTO user_hist (loan_id, user_id, book_borrowed, library_id, date_borrowed, date_returned)
-  VALUES (DEFAULT, user_id_checkout_hold, book_id_p, book_library_id, now(), null);
+    INSERT INTO user_hist (loan_id, user_id, book_borrowed, library_id, date_borrowed, date_returned)
+    VALUES (DEFAULT, user_id_checkout_hold, book_id_p, book_library_id, now(), null);
+
+  END IF;
 
   COMMIT;
- -- We will register the user to whatever copy of the book that has been checked out
- -- for the longest period of time, assuming that it will be the next copy returned
- END IF;
 END $$
 DELIMITER ;
 
