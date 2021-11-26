@@ -9,6 +9,7 @@ class ProfileCheckoutTable(Table):
     no_items = "No Checked Out Items"
     book_title = Col('Book Title', **centered)
     author = Col('Author', **centered)
+    library_name = Col('Library Name', **centered)
     checkout_date = DatetimeCol('Checkout Date', **centered)
     due_date = DatetimeCol('Due Date', **centered)
     rtn_book = ButtonCol(
@@ -26,12 +27,13 @@ class ProfileCheckoutTable(Table):
     border = True
 
 class ProfileCheckoutTbCell(object):
-    def __init__(self, user_id, book_title, book_id, author, checkout_date, due_date):
+    def __init__(self, user_id, book_title, book_id, author, library_name, checkout_date, due_date):
 
         # self.user_id = user_id
         # self.book_id = book_id
         self.book_title = book_title
         self.author = author
+        self.library_name = library_name
         self.checkout_date = checkout_date
         self.due_date = due_date
 
@@ -43,7 +45,7 @@ class ProfileCheckoutTbCell(object):
         }
 
 def create_profile_checkout_cells(raw_res_list : List[Dict]) -> List[ProfileCheckoutTbCell]:
-    """Given: user_id, book_title, book_id, author, checkout_date, due_date
+    """Given: user_id, book_title, book_id, author, library_name, checkout_date, due_date
     Returns: list of ProfileCheckoutTbCell objects for ProfileCheckoutTable"""
     if raw_res_list is None: return []
 

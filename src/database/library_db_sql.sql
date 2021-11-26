@@ -1492,18 +1492,22 @@ DELIMITER $$
 CREATE PROCEDURE get_user_checkouts(IN user_id_p INT)
 BEGIN
   -- GIVEN: user_id
-  -- RETURNS: user_id, book_title, book_id, author, checkout_date, due_date
+  -- RETURNS: user_id, book_title, book_id, author, library_name, checkout_date, due_date
 
   SELECT
     user_id_p AS "user_id",
     book.title AS book_title,
     checked_out_books.book_id,
     book.author,
+    library.library_name,
     checked_out_books.checkout_date,
     checked_out_books.due_date
   FROM checked_out_books
   JOIN book_inventory ON book_inventory.book_id = checked_out_books.book_id
   JOIN book ON book_inventory.isbn = book.isbn
+  JOIN bookshelf ON bookshelf.bookshelf_id = book_inventory.bookshelf_id
+  JOIN bookcase ON bookcase.bookcase_id = bookshelf.bookcase_id
+  JOIN library ON library.library_id = bookcase.library_id
   WHERE checked_out_books.user_id = user_id_p;
 
 END $$
