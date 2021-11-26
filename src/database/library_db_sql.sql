@@ -1670,11 +1670,11 @@ CALL insert_employee(CURDATE(), 70000,
 CALL add_new_book("Database Systems - A Practical Approach to Design, Implementation, and Management",
     -- This only works bc custom data, change eventually
     1, "978-0-13-294326-0", "Thomas Connolly and Carolyn Begg", "Pearson",
-    false, 1442, 14, 005.74, 10);
+    false, 1442, 2, 005.74, 10);
 
 -- have Moby Dick be in 2 libraries in the same system (make the lib id be 1 and 2)
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
-    false, 704, 1, 812.54, .3);
+    false, 704, 10, 812.54, .3);
 -- Have 2 copies of the same book in 1 library
 CALL add_new_book("Moby Dick", 1, '9780425120231', 'Herman Melville', 'Berkley Pub Group',
     false, 704, 21, 812.54, .3);
