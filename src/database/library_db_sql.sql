@@ -1220,13 +1220,13 @@ BEGIN
     ),
     calc_overdue_costs AS (
         SELECT get_lib_name.library_name, get_lib_name.date_borrowed, 
-            get_lib_name.date_returned, get_lib_name.title, 
+            get_lib_name.date_returned, days_checked_out, get_lib_name.title, 
             -- if the days checked out is less than the allowed checkout length, cost is 0
             CASE 
                 WHEN days_checked_out < max_checkout_len_days THEN 0
                 ELSE (days_checked_out - max_checkout_len_days) * late_fee_per_day
             END AS overdue_fee_dollars,
-            max_checkout_len_days
+            max_checkout_len_days, late_fee_per_day
         FROM get_lib_name
     )
     
