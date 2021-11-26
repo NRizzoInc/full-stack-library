@@ -654,16 +654,20 @@ DECLARE book_library_id INT;
 DECLARE new_checkout_user_id INT;
 DECLARE checkout_length_days INT;
 DECLARE due_datetime DATE;
+DECLARE isbn_from_p VARCHAR(17);
 
+-- Grabs the ISBN of the book being returned
+SELECT isbn FROM book_inventory WHERE (book_id = book_id_P) 
+    INTO isbn_from_p;
+    
 -- A function to get the library_id for a specific book
 SELECT library_id_from_book(book_id_P) INTO book_library_id;
-
 
  -- Adds the return date to the user_Hist
 UPDATE user_hist
  SET date_returned = now()
  WHERE ((user_id_p = user_id) AND
-        (book_id_p = book_id));
+        (book_id_p = book_borrowed));
 
  -- Delete row from checked_out_Books
  DELETE FROM checked_out_books
@@ -674,13 +678,13 @@ UPDATE user_hist
 
  -- Checks out the book for the next person on hold, if one exists
  -- Otherwise, the book is return and ready to be checked out by whomever else wants it
-IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
+IF EXISTS (SELECT * FROM holds where (isbn_from_p = isbn)) THEN
   SET new_checkout_user_id = (
     SELECT user_id FROM holds
-    WHERE (book_id_p = book_id)
+    WHERE (isbn_from_p = isbn)
     ORDER BY hold_start_date ASC LIMIT 1
   );
-  SET checkout_length_days  = (SELECT checkout_length_days FROM book WHERE book_id = book_id_p);
+  SET checkout_length_days  = (SELECT checkout_length_days FROM book_inventory WHERE book_id_p = book_id);
   SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
 
   INSERT INTO checked_out_books (user_id,              book_id,   checkout_date, due_date)
@@ -701,6 +705,33 @@ IF EXISTS (SELECT * FROM holds where (book_id_p = book_id)) THEN
 END $$
 -- resets the DELIMETER
 DELIMITER ;
+
+
+-- Given a user_id, returns all books currently checked out or on hold by user
+DELIMITER $$
+CREATE PROCEDURE current_hold_and_checked_out(IN user_id_p INT)
+BEGIN
+   WITH current_holds AS(
+    SELECT isbn FROM holds WHERE (user_id_p = user_id)
+   ),
+   current_checked_out_id AS (
+    SELECT book_id FROM checked_out_books WHERE (user_id_p = user_id)
+   ), 
+   current_checked_out_isbn AS (
+    SELECT isbn FROM book_inventory 
+     WHERE (book_id IN (SELECT * FROM current_checked_out_ID))
+   )
+   
+   -- the table of ISBNs representing the books a specific user
+   -- has checked out or has placed a hold on
+   SELECT * FROM current_holds 
+    UNION ALL
+   SELECT * FROM current_checked_out_isbn;
+   
+END $$
+-- resets the DELIMETER
+DELIMITER ;
+
 
 
 -- Given a username, returns true (1) if username is not currently used
@@ -834,6 +865,8 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
+-- given a username and library card number, checks to see if 
+-- that library cards corresponds to that username
 DELIMITER $$
 CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
 BEGIN
