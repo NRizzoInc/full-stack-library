@@ -1263,7 +1263,7 @@ BEGIN
 
     SELECT *
     FROM calc_overdue_costs
-    ORDER BY calc_overdue_costs.date_borrowed DESC;
+    ORDER BY calc_overdue_costs.date_borrowed ASC;
 
 END $$
 -- resets the DELIMETER
