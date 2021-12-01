@@ -547,7 +547,7 @@ if __name__ == '__main__':
         action="store_false",
         dest="debugMode",
         required=False,
-        help="Dont use debug mode for development environments",
+        help="Dont use debug mode for production environments",
         default=True
     )
 
