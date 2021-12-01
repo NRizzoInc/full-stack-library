@@ -549,6 +549,7 @@ CREATE PROCEDURE checkout_book(
     ROLLBACK;
     SELECT 0 as "rtncode", null as "due_date";
   END;
+  START TRANSACTION; -- may need to rollback bc multiple inserts
 
   -- function return -1 if no coopies of the book can be checked out
   SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p, user_id_p);
@@ -566,7 +567,6 @@ CREATE PROCEDURE checkout_book(
   SET due_datetime = (SELECT DATE_ADD(checkout_datetime, INTERVAL checkout_length_days DAY));
 
   -- Adds the book to the check_out_books table
-  START TRANSACTION; -- may need to rollback bc multiple inserts
   INSERT INTO checked_out_books (user_id,   book_id,       checkout_date,     due_date)
   VALUES                        (user_id_p, avail_book_id, checkout_datetime, due_datetime);
 
