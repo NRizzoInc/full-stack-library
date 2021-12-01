@@ -540,7 +540,7 @@ if __name__ == '__main__':
         dest="debugMode",
         required=False,
         help="Use debug mode for development environments",
-        default=True
+        default=False
     )
     parser.add_argument(
         "--debugModeOff",
@@ -548,6 +548,7 @@ if __name__ == '__main__':
         dest="debugMode",
         required=False,
         help="Dont use debug mode for development environments",
+        default=True
     )
 
     parser.add_argument(
