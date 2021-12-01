@@ -7,7 +7,7 @@ set installDir=%~dp0
 
 :: Need to do this syntax to get to parent (P) directory
 FOR %%P IN ("%installDir%.") DO SET rootDir=%%~dpP
-set virtualEnvironDir=%rootDir%%virtualEnvironName%
+set virtualEnvironDir="%rootDir%"%virtualEnvironName%
 set pythonVersion=3.9
 
 :: Install the venv
