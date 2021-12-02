@@ -1805,3 +1805,5 @@ CALL add_new_book("Death of a Salesman", 4,
 -- in web app, try checking out second copy of "moby dick" at this library
 CALL checkout_book(1, "Moby Dick", 1, 1); -- will work twice (but then no more copies available)
 CALL checkout_book(1, "Moby Dick", 1, 2); -- get last copy of moby dick in system (but diff lib)
+CALL checkout_book(7, "China Room", 1, 2); -- get last copy of "China Room" on holdacct so nickrizzo can place hold
+CALL place_hold(1, "China Room", 1, 2); -- have nickrizzo place hold on China Room to see in profile
