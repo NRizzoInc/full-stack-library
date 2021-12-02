@@ -428,9 +428,10 @@ class WebApp(UserManager):
             if request.method == "POST" and form.validate_on_submit():
                 # actually change a user's login given info is valid/allowed
                 self.updatePwd(form.username.data, form.new_password.data)
+                flash("Password Reset Successful", "is-success")
                 return redirect(url_for('index'))
             elif request.method == "POST":
-                print("Forgot Password Reset Failed")
+                flash("Password Reset Failed", "is-danger")
 
             # on GET or failure, reload
             return render_template('forgotPasswordForm.html', title='LibraryDB Forgot Password', form=form)
