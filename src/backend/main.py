@@ -210,9 +210,9 @@ class WebApp(UserManager):
             flash("Successfully placed hold on " + str(book_title), "is-success")
             return redirect(url_for("index"))
 
-        @self._app.route('/get_book/<string:method>/<string:book_title>', methods=['POST'])
+        @self._app.route('/get_book/<string:lib_name>/<string:method>/<string:book_title>', methods=['POST'])
         @login_required
-        def getbook(book_title: str, method: str):
+        def getbook(lib_name: str, book_title: str, method: str):
             """Actually checks out or places hold on a book based on url params
             Args:
                 book_title (str): The title of the book
@@ -223,7 +223,8 @@ class WebApp(UserManager):
 
             user_id = current_user.id
             lib_sys_id = self.get_lib_sys_id_from_user_id(user_id)
-            lib_id = self.get_lib_id_from_user_id(user_id)
+            lib_sys_name = self.get_lib_sys_name_from_id(lib_sys_id)
+            lib_id = self.get_lib_id_from_name(lib_name, lib_sys_name)
 
             # error check
             if(book_title == None or lib_sys_id == None or lib_id == None):

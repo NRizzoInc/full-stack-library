@@ -555,6 +555,7 @@ CREATE PROCEDURE checkout_book(
   SET avail_book_id = is_book_avail(book_title, lib_sys_id_p, lib_id_p, user_id_p);
   IF avail_book_id < 0 THEN
     SELECT avail_book_id as "rtncode", null as "due_date";
+    ROLLBACK;
     LEAVE checkout_label;
   END IF;
 

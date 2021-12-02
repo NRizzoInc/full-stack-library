@@ -16,6 +16,7 @@ class BookSearchTable(Table):
         name='Perform Checkout/Place Hold',
         endpoint="getbook", # generic endpoint for BOTH checkouts and holds
         url_kwargs=dict(
+            lib_name="lib_name",
             book_title="book_title",
             method="method" # method of getting book ('hold' or 'checkout')
         ),
@@ -51,8 +52,8 @@ class BookSearchCell(object):
         # If there are no book left, a hold should be placed
         self.method = "checkout" if num_copies_in_stock > 0 else "hold"
         self.checkout = {
+            "lib_name": lib_name,
             "book_title": book_title,
-            # "book_id": book_id,
             "method": self.method, # method of getting book ('hold' or 'checkout')
         }
 
