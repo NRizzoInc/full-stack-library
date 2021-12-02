@@ -103,15 +103,13 @@
                         </div>
                         {% endif %}
 
-                        {% if not current_user.is_authenticated %}
                         <div class="navbar-item">
                             <div class="buttons">
-                                <a href="{{ url_for('forgotPassword') }}" class="button is-info">
-                                    <strong>Forgot Password</strong>
+                                <a href="{{ url_for('forgotPassword') }}" class="button is-danger">
+                                    <strong>{{ "Forgot Password" if not current_user.is_authenticated else "Reset Password" }}</strong>
                                 </a>
                             </div>
                         </div>
-                        {% endif %}
 
                         {% if current_user.is_authenticated %}
                         <div class="navbar-item">
