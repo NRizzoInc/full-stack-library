@@ -410,9 +410,13 @@ class WebApp(UserManager):
                 user_id = current_user.id
                 pending_employee_table = self._get_pending_employee_table(user_id)
 
+                lib_id = self.get_lib_id_from_user_id(user_id)
+                lib_name = self.get_lib_name_from_id(lib_id)
+
                 return render_template("employeeActions.html",
                                        add_new_book_form=AddBookForm(),
-                                       pending_employee_table=pending_employee_table)
+                                       pending_employee_table=pending_employee_table,
+                                       library_name=lib_name)
 
         @self._app.route("/forgot-password", methods=["GET", "POST"])
         def forgotPassword():
@@ -447,10 +451,13 @@ class WebApp(UserManager):
             elif action == "deny":
                 self.deny_employee_approval(employee_id)
 
+            lib_id = self.get_lib_id_from_user_id(current_user.id)
+            lib_name = self.get_lib_name_from_id(lib_id)
             # return to the previous page
             return redirect(url_for("employee_actions",
                                     add_new_book_form=AddBookForm(),
-                                    pending_employee_table=self._get_pending_employee_table(current_user.id)))
+                                    pending_employee_table=self._get_pending_employee_table(current_user.id),
+                                    library_name=lib_name))
 
     def createEmployeeRoutes(self):
         @self._app.route("/add_new_book", methods=["GET", "POST"])
