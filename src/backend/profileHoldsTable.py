@@ -11,7 +11,7 @@ class ProfileHoldsTable(Table):
 
     book_title = Col('Book Title', **centered)
     author = Col('Author', **centered)
-    library_name = Col('Library', **centered)
+    library_name = Col('Library Name', **centered)
     hold_start_date = DatetimeCol('Hold Start Date', **centered)
     cancel_holds = ButtonCol(
         name='Cancel Hold ',
