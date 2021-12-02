@@ -294,7 +294,7 @@ CREATE FUNCTION library_id_from_book(book_id_p INT)
 BEGIN
  DECLARE library_id_out INT;
  WITH desired_book AS(
-    SELECT book_inventory.*, book.title FROM book_inventory 
+    SELECT book_inventory.*, book.title FROM book_inventory
     JOIN book ON book.isbn = book_inventory.isbn
     WHERE book_inventory.book_id = book_id_p
   ),
@@ -473,7 +473,7 @@ BEGIN
       ) END
     )
     FROM already_checked_out -- should be empty if none checked out already
-      
+
   );
 
   RETURN(book_copy_avail);
@@ -687,9 +687,9 @@ BEGIN
   END;
 
   -- Grabs the ISBN of the book being returned
-  SELECT isbn FROM book_inventory WHERE (book_inventory.book_id = book_id_p) 
+  SELECT isbn FROM book_inventory WHERE (book_inventory.book_id = book_id_p)
     INTO isbn_from_p;
-    
+
   -- A function to get the library_id for a specific book
   SELECT library_id_from_book(book_id_p) INTO book_library_id;
 
@@ -746,18 +746,18 @@ BEGIN
    ),
    current_checked_out_id AS (
     SELECT book_id FROM checked_out_books WHERE (user_id_p = user_id)
-   ), 
+   ),
    current_checked_out_isbn AS (
-    SELECT isbn FROM book_inventory 
+    SELECT isbn FROM book_inventory
      WHERE (book_id IN (SELECT * FROM current_checked_out_ID))
    )
-   
+
    -- the table of ISBNs representing the books a specific user
    -- has checked out or has placed a hold on
-   SELECT * FROM current_holds 
+   SELECT * FROM current_holds
     UNION ALL
    SELECT * FROM current_checked_out_isbn;
-   
+
 END $$
 -- resets the DELIMETER
 DELIMITER ;
@@ -895,7 +895,7 @@ END $$
 -- resets the DELIMETER
 DELIMITER ;
 
--- given a username and library card number, checks to see if 
+-- given a username and library card number, checks to see if
 -- that library cards corresponds to that username
 DELIMITER $$
 CREATE PROCEDURE check_lib_card(IN username_to_test VARCHAR(50), IN card_num INT)
@@ -1139,27 +1139,27 @@ BEGIN
     -- PRECONDITION: the in_user_id is the user_id of an employee
     -- given the user id (of an employee), get ALL pending employees belonging to this employee's library
     -- return their first_name, last_name, job_role, and hire_date
-    
+
     DECLARE user_lib_id INT;
     -- Only care about employees that are part of the same library
     SELECT library_id INTO user_lib_id
         FROM employee
         WHERE in_user_id = employee.user_id;
-    
+
     WITH pending_employees AS(
         SELECT hire_date, job_role, user_id, employee_id
         FROM employee
-        WHERE is_approved = false
+        WHERE is_approved = false AND user_lib_id = employee.library_id
     )
-    
+
     -- Get all needed information
     SELECT lib_user.first_name,
            lib_user.last_name,
            pending_employees.job_role,
-           pending_employees.hire_date, 
+           pending_employees.hire_date,
            pending_employees.employee_id
         FROM pending_employees
-        JOIN lib_user 
+        JOIN lib_user
         ON pending_employees.user_id = lib_user.user_id;
 
 END $$
@@ -1225,15 +1225,15 @@ BEGIN
     -- Return:
     -- book title checked out, date checked out, return date (null or the day), overdue fee ( have to calculate it), library name
     -- preferably in sorted order of checked out date
-    
+
     WITH get_loan_hist AS (
         SELECT loan_id, book_borrowed AS borrowed_book_id, library_id, date_borrowed, date_returned
-        FROM user_hist 
+        FROM user_hist
         WHERE user_id = in_user_id
     ),
     -- use the borrowed_book_id (FK to inventory) to get its isbn and from there, its title in book
     get_book_name AS (
-        SELECT get_loan_hist.*, book.title, 
+        SELECT get_loan_hist.*, book.title,
             -- If the book has yet to be returned, assume it will be today when calculating costs
             DATEDIFF(coalesce(get_loan_hist.date_returned, CURDATE()), date_borrowed) AS days_checked_out,
             book_inventory.checkout_length_days AS max_checkout_len_days,
@@ -1249,17 +1249,17 @@ BEGIN
         LEFT JOIN library ON get_book_name.library_id = library.library_id
     ),
     calc_overdue_costs AS (
-        SELECT get_lib_name.library_name, get_lib_name.date_borrowed, 
-            get_lib_name.date_returned, days_checked_out, get_lib_name.title, 
+        SELECT get_lib_name.library_name, get_lib_name.date_borrowed,
+            get_lib_name.date_returned, days_checked_out, get_lib_name.title,
             -- if the days checked out is less than the allowed checkout length, cost is 0
-            CASE 
+            CASE
                 WHEN days_checked_out < max_checkout_len_days THEN 0
                 ELSE (days_checked_out - max_checkout_len_days) * late_fee_per_day
             END AS overdue_fee_dollars,
             max_checkout_len_days, late_fee_per_day
         FROM get_lib_name
     )
-    
+
 
     SELECT *
     FROM calc_overdue_costs
@@ -1503,13 +1503,13 @@ BEGIN
  DECLARE is_still_pending BOOL;
   -- return true if the user is still pending as an employee
   -- If the user is not registered as an employee AT ALL - returns false as well
-  
+
   SELECT COUNT(*)
   INTO is_still_pending
   FROM employee
-  WHERE 
+  WHERE
     -- first make sure the user exists as an employee
-    user_id = in_user_id 
+    user_id = in_user_id
     AND
     -- must be pending approval
     is_approved = false
@@ -1685,7 +1685,6 @@ CALL insert_employee(CURDATE(), 55000,
     -- 2nd is library id
     2, 4, true);
 
-
 CALL insert_user(
   "Domenic", "Privitera",
   6, -- library_id = 6 (Cambridge Public Library - system 3)
@@ -1699,6 +1698,40 @@ CALL insert_employee(CURDATE(), 70000,
     -- First is user id - 3rd user to be added
     -- 2nd is library id
     3, 6, true);
+
+CALL insert_user(
+  "Central", "Emp",
+  2,
+  CURDATE(), true, "central_employee", "central_pwd"
+);
+-- Can do this because this is being done manually in order
+CALL insert_employee(CURDATE(), 65300,
+    "Manages the Central Library in Copley Square. Can add new books to the catalog.",
+    4, 2, true);
+
+CALL insert_user(
+  "Jamaica", "Emp",
+  3,
+  CURDATE(), true, "jamaica_employee", "jamaica_pwd"
+);
+-- Can do this because this is being done manually in order
+CALL insert_employee(CURDATE(), 59870,
+    "Manages the Jamaica Plain Library. Can add new books to the catalog.",
+    5, 3, true);
+
+
+
+CALL insert_user(
+  "Kingston", "Emp",
+  5,
+  CURDATE(), true, "kingston_employee", "kingston_pwd"
+);
+-- Can do this because this is being done manually in order
+CALL insert_employee(CURDATE(), 53240,
+    "Manages the Kingston Plain Library. Can add new books to the catalog.",
+    6, 5, true);
+
+
 
 CALL insert_user(
   "fname", "lname",

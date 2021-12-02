@@ -343,7 +343,6 @@ class WebApp(UserManager):
                 return render_template('registration.html', title="LibraryDB Login", form=form)
 
             elif request.method == "POST" and form.validate_on_submit():
-                print("register validation passed")
                 # actually add user given info is valid/allowed
                 add_employee_res = 0 # "failed" to adad employee cus... we arent
                 add_res = self.addUser(
@@ -380,8 +379,10 @@ class WebApp(UserManager):
                     flash(msg, " is-success")
 
                     if (add_employee_res == 1):
+                        lib_name = self.get_lib_name_from_id(lib_id)
                         employee_msg = "You are a registered employee"
                         employee_msg += " pending approval by a fellow coworker"
+                        employee_msg += f" from the {lib_name}"
                         flash(employee_msg, " is-info")
 
                 elif (add_res == 0):
