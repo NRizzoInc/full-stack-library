@@ -491,11 +491,12 @@ class WebApp(UserManager):
                 )
 
                 if (add_book_res == 1):
-                    msg = f"The book {add_book_form.book_title.data} was added to library {library_name}"
+                    msg = "The book '" + add_book_form.book_title.data + f"' was added to library {library_name}"
                     flash(msg, " is-success")
                     return redirect(url_for("login"))
                 elif (add_book_res == -1):
-                    flash(f'Failed to add the book {add_book_form.book_title.data} to library {library_name}!', "is-danger")
+                    msg = "Failed to add the book '" + add_book_form.book_title.data + f"' to library {library_name}!"
+                    flash(msg, "is-danger")
 
             elif request.method == "POST":
                 flash("Add New Book Validation Failed", "is-danger")
