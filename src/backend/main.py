@@ -548,14 +548,15 @@ if __name__ == '__main__':
         dest="debugMode",
         required=False,
         help="Use debug mode for development environments",
-        default=True
+        default=False
     )
     parser.add_argument(
         "--debugModeOff",
         action="store_false",
         dest="debugMode",
         required=False,
-        help="Dont use debug mode for development environments",
+        help="Dont use debug mode for production environments",
+        default=True
     )
 
     parser.add_argument(

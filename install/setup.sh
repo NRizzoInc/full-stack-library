@@ -64,7 +64,7 @@ fi
 
 THIS_FILE_DIR="$(readlink -fm $0/..)"
 virtualEnvironName="cs3200-venv"
-rootDir="$(readlink -fm ${THIS_FILE_DIR}/..)"
+rootDir="$(readlink -fm "${THIS_FILE_DIR}"/..)"
 srcDir="$(readlink -fm ${rootDir}/..)"
 backendDir="${srcDir}/backend"
 installDir="${rootDir}/install"
@@ -90,8 +90,8 @@ if [[ ${isWindows} = true ]]; then
     fi
 
     echo "#1.2 Creating Virtual Environment"
-    py -3 -m venv $virtualEnvironDir # actually create the virtual environment
-    $virtualEnvironDir/Scripts/activate
+    py -3 -m venv "${virtualEnvironDir}" # actually create the virtual environment
+    "${virtualEnvironDir}/Scripts/activate"
     pipLocation="$virtualEnvironDir/Scripts/pip3.exe"
 
     echo "#1.3 Getting Path to Virtual Environment's Python"
@@ -115,7 +115,7 @@ else
         ${pythonName}-venv
 
     echo "#1.4 Creating Virtual Environment"
-    ${pythonName} -m venv ${virtualEnvironDir} # actually create the virtual environment
+    ${pythonName} -m venv "${virtualEnvironDir}" # actually create the virtual environment
     source "${virtualEnvironDir}/bin/activate"
     pipLocation="${virtualEnvironDir}/bin/pip${pythonVersion}"
 
