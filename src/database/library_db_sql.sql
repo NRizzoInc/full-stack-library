@@ -326,7 +326,7 @@ DELIMITER ;
 -- Lists the library branch where each available copy of a book is located
 DROP PROCEDURE IF EXISTS search_for_book;
 DELIMITER $$
-CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(50), IN lib_sys_id_p INT)
+CREATE PROCEDURE search_for_book(IN booktitle_p VARCHAR(200), IN lib_sys_id_p INT)
 BEGIN
 -- This cannot be a function because a table is returned
  DECLARE derived_isbn VARCHAR(17);
