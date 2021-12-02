@@ -28,11 +28,26 @@ Authors:
    * This handles the complete setup of a virtual environment with the correct libraries/packages for the project.
    * The virtual environment will live in `/cs3200-venv` relative to the top level of this project
    * Depending on the operating system, the exact location of the python interpreter will change. However, the start scripts will handle that, and you do not need to figure it out.
-3. Start the Server:
-   * Windows: [start.bat](start.bat)
-     * Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
-   * Ubuntu/Debian/Windows Git-Bash: [start.sh](start.sh)
-   * Each script will call `main.py` using the python virtual environment setup.
+3. If testing the late fee calculation functionality:
+   * After running the dump file to create the schema, please run the sql script at /src/database/show_overdue_functionality.sql.
+   * The script adds another procedure to the database which can checkout a book on a specific day.
+     * It then checks out a book on a specific day in the past with a very low checkout length.
+     * The book is checked out by user nickrizzo.
+   * This is added as an additional feature because the group believed the existence of a procedure to checkout a book on a specific day was inappropriate.
+     * The design of the application is such that a user checks out a book the moment they are checking it out.
+     * There should NOT be an interface by which they can checkout a book on a different day.
+     * Hence, this procedure could not be included in the main dump file.
+     * However, for the ease of validating that our late fee calculation is correct,
+       * the group added the procedure in this limited capacity.
+   * If the steps in View Profile user flow are followed for the nickrizzo user,
+     * the late fee will be displayed in the table and can be verified.
+
+### Running / Starting the Application Server:
+1. Windows: [start.bat](start.bat)
+   1. Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
+   2. The application can also be started by clicking on the file itself in the file explorer.
+2. Ubuntu/Debian/Windows Git-Bash: [start.sh](start.sh)
+3. Each script will call `main.py` using the python virtual environment setup.
 4. Open the landing page to begin interacting with the Frontend / client side
    1. `http://localhost:8080/`
    2. When the server starts it will also print this url in case port 8080 is taken
