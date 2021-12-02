@@ -524,13 +524,15 @@ class WebApp(UserManager):
 
     def printSites(self):
         print("Existing URLs:")
-        print(f"http://localhost:{self._port}/")
+        print(f"http://localhost:{self._port}/ (home & search page)")
         print(f"http://localhost:{self._port}/login")
         print(f"http://localhost:{self._port}/register")
-        print(f"http://localhost:{self._port}/forgot-password")
         print(f"http://localhost:{self._port}/logout")
+        print(f"http://localhost:{self._port}/profile")
+        print(f"http://localhost:{self._port}/get_lib_sys_catalog")
+        print(f"http://localhost:{self._port}/employee_actions")
+        print(f"http://localhost:{self._port}/forgot-password")
         print(f"http://localhost:{self._port}/checkout")
-        print(f"http://localhost:{self._port}/search_book")
 
 if __name__ == '__main__':
 
