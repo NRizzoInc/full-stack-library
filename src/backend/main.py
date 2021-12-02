@@ -510,11 +510,18 @@ class WebApp(UserManager):
 
             elif request.method == "POST":
                 flash("Add New Book Validation Failed", "is-danger")
+                # do a render template so that the validation failure messages are displayed.
+                # A redirect will erase them.
+                return render_template("employeeActions.html",
+                                       add_new_book_form=add_book_form,
+                                       pending_employee_table=self._get_pending_employee_table(current_user.id),
+                                       library_name=library_name)
 
             # Return to the employee action page
             return redirect(url_for("employee_actions",
                                    add_new_book_form=add_book_form,
-                                   pending_employee_table=self._get_pending_employee_table(current_user.id)))
+                                   pending_employee_table=self._get_pending_employee_table(current_user.id),
+                                   library_name=library_name))
 
     def _get_pending_employee_table(self, user_id):
         """Util Function to prevent code duplication
