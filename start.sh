@@ -20,37 +20,8 @@ else
     venvPath="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
 fi
 
-# CLI Flags
-print_flags () {
-    echo "=========================================================================================================="
-    echo "Usage: start.sh"
-    echo "=========================================================================================================="
-    echo "Helper utility to start up the Library Database Web Application"
-    echo "Starts up the virtual environment via bash and runs without user having to worry about it."
-    echo "=========================================================================================================="
-    echo "How to use:" 
-    echo "  To Start: ./start.sh"
-    echo "  To Stop: control+c"
-    echo "=========================================================================================================="
-    echo "Available Flags:"
-    echo "  -h,--help : Prints the command line help message of the native mode that is run"
-    echo "              (or this message if no mode specified)"
-    echo "=========================================================================================================="
-}
-
 # use "$@" to pass on all parameter the same way to python script
 ARGS=$@
-# parse command line args
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        # none of these are reachable if mode is provided due to the break within the "mode" flag
-        -h | --help )
-            print_flags
-            exit 0
-            ;;
-    esac
-    shift
-done
 
 # check if venv is setup, if not inform user to run install
 if [[ -f ${venvPath} ]]; then

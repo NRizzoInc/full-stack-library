@@ -69,16 +69,20 @@ class WebApp(UserManager):
         self.generateRoutes()
 
         # dont thread so requests dont happen concurrently
-        # self._app.run(host=self._host, port=self._port, debug=self._is_debug, threaded=False)
+        is_threaded = False
 
-        # FOR PRODUCTION
-        werkzeug.serving.run_simple(
-            hostname=self._host,
-            port=self._port,
-            application=self._app,
-            use_debugger=self._is_debug,
-            threaded=False
-        )
+        # start blocking main web server loop (nothing after this is run)
+        if self._is_debug:
+            self._app.run(host=self._host, port=self._port, debug=self._is_debug, threaded=is_threaded)
+        else:
+            # FOR PRODUCTION
+            werkzeug.serving.run_simple(
+                hostname=self._host,
+                port=self._port,
+                application=self._app,
+                use_debugger=self._is_debug,
+                threaded=is_threaded
+            )
 
     def generateRoutes(self):
         """Wrapper around all url route generation"""
