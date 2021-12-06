@@ -143,13 +143,14 @@ class WebApp(UserManager):
             search_table = BookSearchTable(BookSearchTableCells)
 
             return render_template("searchResult.html",
+                title="Library Search Results",
                 book_title_searched=form.book_title.data,
                 result_table=search_table
             )
 
-        @self._app.route("/get_lib_sys_catalog", methods=["GET"])
+        @self._app.route("/library_catalog", methods=["GET"])
         @login_required
-        def get_lib_sys_catalog():
+        def library_catalog():
             lib_sys_name = self.get_lib_sys_name_from_user_id(current_user.id)
             lib_sys_id = self.get_lib_sys_id_from_user_id(current_user.id)
             catalog_dict = self.search_lib_sys_catalog(lib_sys_id)
@@ -159,7 +160,10 @@ class WebApp(UserManager):
 
             # If the list is empty, "No Items" is displayed
             catalog_table = CatalogResultTable(catalog_cells)
-            return render_template("catalogResult.html", lib_sys_name=lib_sys_name, catalog_table=catalog_table)
+            return render_template("catalogResult.html",
+                                   title="Library Catalog",
+                                   lib_sys_name=lib_sys_name,
+                                   catalog_table=catalog_table)
 
     def createInfoRoutes(self):
         """All routes for internal passing of information"""
@@ -353,7 +357,7 @@ class WebApp(UserManager):
             form.lib_name.choices = [('', '')] + libraries
 
             if request.method == "GET":
-                return render_template('registration.html', title="LibraryDB Login", form=form)
+                return render_template('registration.html', title="Library Sign Up", form=form)
 
             elif request.method == "POST" and form.validate_on_submit():
                 # actually add user given info is valid/allowed
@@ -411,7 +415,7 @@ class WebApp(UserManager):
                 print("Registration Validation Failed")
 
             # on GET or failure, reload
-            return render_template('registration.html', title='LibraryDB Registration', form=form)
+            return render_template('registration.html', title="Library Sign Up", form=form)
 
         @self._app.route("/employee_actions", methods=["GET", "POST"])
         @login_required
@@ -428,6 +432,7 @@ class WebApp(UserManager):
                 lib_name = self.get_lib_name_from_id(lib_id)
 
                 return render_template("employeeActions.html",
+                                       title="Library Employee Actions",
                                        add_new_book_form=AddBookForm(),
                                        pending_employee_table=pending_employee_table,
                                        library_name=lib_name)
@@ -470,6 +475,7 @@ class WebApp(UserManager):
             lib_name = self.get_lib_name_from_id(lib_id)
             # return to the previous page
             return redirect(url_for("employee_actions",
+                                    title="Library Employee Actions",
                                     add_new_book_form=AddBookForm(),
                                     pending_employee_table=self._get_pending_employee_table(current_user.id),
                                     library_name=lib_name))
@@ -521,6 +527,7 @@ class WebApp(UserManager):
 
             # Return to the employee action page
             return redirect(url_for("employee_actions",
+                                    title="Library Employee Actions",
                                    add_new_book_form=add_book_form,
                                    pending_employee_table=self._get_pending_employee_table(current_user.id),
                                    library_name=library_name))
@@ -538,7 +545,7 @@ class WebApp(UserManager):
         print(f"http://localhost:{self._port}/register")
         print(f"http://localhost:{self._port}/logout")
         print(f"http://localhost:{self._port}/profile")
-        print(f"http://localhost:{self._port}/get_lib_sys_catalog")
+        print(f"http://localhost:{self._port}/library_catalog")
         print(f"http://localhost:{self._port}/employee_actions")
         print(f"http://localhost:{self._port}/forgot-password")
         print(f"http://localhost:{self._port}/checkout")
