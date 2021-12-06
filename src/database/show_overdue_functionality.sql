@@ -1,3 +1,5 @@
+USE libSystem;
+
 DROP PROCEDURE IF EXISTS checkout_book_on_day;
 DELIMITER $$
 CREATE PROCEDURE checkout_book_on_day(
