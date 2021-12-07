@@ -1518,6 +1518,7 @@ BEGIN
 
   RETURN(is_still_pending);
 END $$
+DELIMITER ;
 -- resets the DELIMETER
 
 DROP PROCEDURE IF EXISTS get_user_checkouts;
