@@ -69,7 +69,7 @@ class WebApp(UserManager):
         self.generateRoutes()
 
         # dont thread so requests dont happen concurrently
-        is_threaded = False
+        is_threaded = True
 
         # start blocking main web server loop (nothing after this is run)
         if self._is_debug:
