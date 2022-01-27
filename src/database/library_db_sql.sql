@@ -3,8 +3,9 @@
 
 DROP DATABASE IF EXISTS libsystem;
 
-CREATE DATABASE IF NOT EXISTS libSystem;
-USE libSystem;
+CREATE DATABASE IF NOT EXISTS libsystem;
+USE libsystem;
+SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 
 DROP TABLE IF EXISTS library_system;
 -- The library system (such as all libraries in 1 city)
