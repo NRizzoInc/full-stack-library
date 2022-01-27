@@ -21,14 +21,15 @@ Authors:
    2. Please run `py -0` to see a list of installed python versions.
       1. Please confirm that you see `"-3.9-64 *"` or `"-3.9-64 "`. If not, the installation was not successful.
    3. If you are using Ubuntu or a Debian distribution, this install will be handled for you in [install/setup.sh](install/setup.sh).
-2. Run setup scripts. Pick the correct one based on your operating system:
+2. Run the library database sql setup script found at `src/database/library_db_sql.sql`
+3. Run setup scripts. Pick the correct one based on your operating system:
    * Windows: [install/setup.bat](install/setup.bat)
      * Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
    * Ubuntu/Debian/Windows Git-Bash: [install/setup.sh](install/setup.sh)
    * This handles the complete setup of a virtual environment with the correct libraries/packages for the project.
    * The virtual environment will live in `/library-venv` relative to the top level of this project
    * Depending on the operating system, the exact location of the python interpreter will change. However, the start scripts will handle that, and you do not need to figure it out.
-3. If testing the late fee calculation functionality:
+4. If testing the late fee calculation functionality:
    * After running the dump file to create the schema, please run the sql script at /src/database/show_overdue_functionality.sql.
    * The script adds another procedure to the database which can checkout a book on a specific day.
      * It then checks out a book on a specific day in the past with a very low checkout length.
