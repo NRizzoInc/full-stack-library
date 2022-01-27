@@ -63,7 +63,7 @@ fi
 
 
 THIS_FILE_DIR="$(readlink -fm $0/..)"
-virtualEnvironName="cs3200-venv"
+virtualEnvironName="library-venv"
 rootDir="$(readlink -fm "${THIS_FILE_DIR}"/..)"
 srcDir="$(readlink -fm ${rootDir}/..)"
 backendDir="${srcDir}/backend"

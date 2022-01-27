@@ -1,8 +1,8 @@
-# CS3200-Final-Proj
+# full-stack-library
 Authors:
-  - Domenic Privitera - privitera.d@northeastern.edu
   - Matthew Rizzo - rizzo.ma@northeastern.edu
   - Nicholas Rizzo - rizzo.n@northeastern.edu
+  - Domenic Privitera - privitera.d@northeastern.edu
 
 ## Creating and Running the Project
 * libraries - see [install/requirements.txt](install/requirements.txt)
@@ -26,7 +26,7 @@ Authors:
      * Note: this can be done through command prompt OR just double clicking on the file in `File Explorer`
    * Ubuntu/Debian/Windows Git-Bash: [install/setup.sh](install/setup.sh)
    * This handles the complete setup of a virtual environment with the correct libraries/packages for the project.
-   * The virtual environment will live in `/cs3200-venv` relative to the top level of this project
+   * The virtual environment will live in `/library-venv` relative to the top level of this project
    * Depending on the operating system, the exact location of the python interpreter will change. However, the start scripts will handle that, and you do not need to figure it out.
 3. If testing the late fee calculation functionality:
    * After running the dump file to create the schema, please run the sql script at /src/database/show_overdue_functionality.sql.

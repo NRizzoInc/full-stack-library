@@ -1,7 +1,7 @@
 :: create virtual environment to install desired packages (i.e. flask & extensions)
 @echo off
 
-set virtualEnvironName=cs3200-venv
+set virtualEnvironName=library-venv
 :: get the directory the file is stored in using %~dp0
 set installDir=%~dp0
 
