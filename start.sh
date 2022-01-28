@@ -3,7 +3,7 @@
 # CREDIT: Nick Rizzo's Personal Project: https://github.com/NRizzoInc/texting-and-emailing-agent/blob/develop/start.sh
 
 # Get paths to everything
-virtualEnvironName="cs3200-venv"
+virtualEnvironName="library-venv"
 rootDir="$(readlink -fm $0/..)"
 virtualEnvironDir="${rootDir}/${virtualEnvironName}"
 srcPath="${rootDir}/src"
@@ -32,5 +32,5 @@ else
 fi
 
 
-echo "Starting Program ${executePath}"
+echo "Starting Program ${executePath} $ARGS"
 "${venvPath}" "${executePath}" $ARGS

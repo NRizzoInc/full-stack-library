@@ -36,13 +36,13 @@ from forgotPasswordForm import ForgotPwdForm
 from addBookForm import AddBookForm
 
 class WebApp(UserManager):
-    def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str):
+    def __init__(self, port: int, is_debug: bool, user: str, pwd: str, db: str, db_host:str='localhost'):
         self._app = Flask("LibraryDB")
         self._app.config["TEMPLATES_AUTO_RELOAD"] = True # refreshes flask if html files change
         self._app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
 
         # Inheret all functions and 'self' variables (UserManager)
-        UserManager.__init__(self, self._app, user, pwd, db)
+        UserManager.__init__(self, self._app, user, pwd, db, db_host)
 
         # current dir
         backend_dir = Path(__file__).parent.resolve()
@@ -600,13 +600,28 @@ if __name__ == '__main__':
         dest="db",
         help="The name of the database to connect to"
     )
+    parser.add_argument(
+        "--db-host",
+        required=False,
+        default="libsystem",
+        dest="db_host",
+        help="The hostname of the database to connect to"
+    )
+
 
     # Actually Parse Flags (turn into dictionary)
     args = vars(parser.parse_args())
 
     # ask for input if password not given
-    if args["pwd"] == None:
+    if args["pwd"] == None and 'MYSQL_PWD' not in os.environ:
         args["pwd"] = getpass.getpass("Enter the password for the database '" + str(args["db"]) + "': ")
 
     # start app
-    app = WebApp(args["port"], args["debugMode"], args["user"], args["pwd"], args["db"])
+    app = WebApp(
+        args["port"] if os.environ.get("PORT") == None else int(os.environ.get("PORT")),
+        args["debugMode"] if os.environ.get("DEBUG_MODE") == None else bool(os.environ.get("DEBUG_MODE")),
+        args["user"] if os.environ.get("MYSQL_USER") == None else os.environ.get("MYSQL_USER"),
+        args["pwd"] if os.environ.get("MYSQL_PWD") == None else os.environ.get("MYSQL_PWD"),
+        args["db"] if os.environ.get("MYSQL_DB") == None else os.environ.get("MYSQL_DB"),
+        args["db_host"] if os.environ.get("MYSQL_HOST") == None else os.environ.get("MYSQL_HOST")
+    )
