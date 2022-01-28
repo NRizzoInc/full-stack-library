@@ -1,5 +1,5 @@
 # Project Specific Ignores
-cs3200-venv/
+library-venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

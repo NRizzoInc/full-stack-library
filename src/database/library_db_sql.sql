@@ -3,7 +3,9 @@
 
 DROP DATABASE IF EXISTS libsystem;
 
-CREATE DATABASE IF NOT EXISTS libsystem;
+CREATE DATABASE IF NOT EXISTS libsystem
+  CHARACTER SET utf8
+  COLLATE utf8_general_ci;
 USE libsystem;
 SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 

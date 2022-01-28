@@ -5,20 +5,22 @@ import os, sys
 import argparse # cli paths
 import datetime
 from typing import Optional, Dict, List
+import cryptography
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import pymysql
 
 class DB_Manager():
-    def __init__(self, user:str, pwd:str, db:str):
+    def __init__(self, user:str, pwd:str, db:str, db_host:str='localhost'):
         """
             \n@param: user  - The username to connect to database with
             \n@param: pwd   - The password to connect to database with
             \n@param: db    - The name of the database to connect with
+            \n@param: db_host-  The hostname of the database to connect with
         """
         try:
             self.conn = pymysql.connect(
-                host="localhost",
+                host=db_host,
                 user=user,
                 password=pwd,
                 db=db,
