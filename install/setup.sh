@@ -125,15 +125,17 @@ else
         echo "#1.4.1 Getting Path to Virtual Environment's Python"
         pythonLocation="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
         echo "-- pythonLocation: ${pythonLocation}"
-
-        # update pip to latest
-        echo "#2 Upgrading pip to latest"
-        "${pythonLocation}" -m pip install --upgrade pip
-
-        # now pip necessary packages
-        echo "#3 Installing all packages"
-        "${pipLocation}" install -r "${installDir}/requirements.txt"
     fi
+fi
+
+if [[ ${installPkgs} = true ]]; then
+    # update pip to latest
+    echo "#2 Upgrading pip to latest"
+    "${pythonLocation}" -m pip install --upgrade pip
+
+    # now pip necessary packages
+    echo "#3 Installing all packages"
+    "${pipLocation}" install -r "${installDir}/requirements.txt"
 fi
 
 if [[ ${deployServices} = true ]]; then
