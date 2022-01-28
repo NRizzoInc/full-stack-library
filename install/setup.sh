@@ -32,11 +32,17 @@ print_flags () {
 # parse command line args
 installPkgs=false
 deployServices=false
+function install_all () {
+    installPkgs=true
+    deployServices=true
+}
+if [[ $# = 0 ]]; then
+    install_all
+fi
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -a | --install-all )
-            installPkgs=true
-            deployServices=true
+            install_all
             break
             ;;
         -p | --python-packages )
