@@ -30,26 +30,22 @@ print_flags () {
 }
 
 # parse command line args
-upgradePkgs=true
+installAll=true
+installPkgs=false
 deployServices=false
-noneSet=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -a | --install-all )
-            upgradePkgs=true
-            deployServices=true
-            noneSet=false
+            installAll=true
             break
             ;;
         -p | --python-packages )
-            upgradePkgs=true
-            noneSet=false
-            break
+            installPkgs=true
+            installAll=false
             ;;
         -s | --deploy-services )
             deployServices=true
-            noneSet=false
-            break
+            installAll=false
             ;;
         -h | --help )
             print_flags
@@ -62,13 +58,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
-
-if [[ ${noneSet} == true ]]; then
-    print_flags
-    echo "Please use one of the flags (just use -a if you are unsure)"
-    exit
-fi
-
 
 THIS_FILE_DIR="$(readlink -fm $0/..)"
 virtualEnvironName="library-venv"
@@ -85,64 +74,65 @@ pythonLocation="" # global (changed based on OS)
 # check OS... (decide how to activate virtual environment)
 echo "#1 Setting up virtual environment"
 if [[ ${isWindows} = true ]]; then
-    # windows
-    echo "#1.1 Checking Python Version"
-    # windows specific way to choose correct version of python... sigh
-    currVersionText=$(py -3 --version)
-    currVersionMinor=$(echo "$currVersionText" | awk '{print $2}')
-    currVersion=$(echo "${currVersionMinor}" | sed -r 's/\.[0-9]$//') # strips away minor version (3.7.2 -> 3.7)
+    if [[ ${installPkgs} = true ]]; then
+        # windows
+        echo "#1.1 Checking Python Version"
+        # windows specific way to choose correct version of python... sigh
+        currVersionText=$(py -3 --version)
+        currVersionMinor=$(echo "$currVersionText" | awk '{print $2}')
+        currVersion=$(echo "${currVersionMinor}" | sed -r 's/\.[0-9]$//') # strips away minor version (3.7.2 -> 3.7)
 
-    echo "Using python${currVersion} to build virtual environment"
-    if [[ ${pythonVersion} != ${currVersion} ]]; then
-        echo "WARNING: Wrong version of python being used. Expects python${pythonVersion}. This might affect results"
+        echo "Using python${currVersion} to build virtual environment"
+        if [[ ${pythonVersion} != ${currVersion} ]]; then
+            echo "WARNING: Wrong version of python being used. Expects python${pythonVersion}. This might affect results"
+        fi
+
+        echo "#1.2 Creating Virtual Environment"
+        py -3 -m venv "${virtualEnvironDir}" # actually create the virtual environment
+        "${virtualEnvironDir}/Scripts/activate"
+        pipLocation="$virtualEnvironDir/Scripts/pip3.exe"
+
+        echo "#1.3 Getting Path to Virtual Environment's Python"
+        pythonLocation="${virtualEnvironDir}/Scripts/python.exe"
+        echo "-- pythonLocation: ${pythonLocation}"
     fi
-
-    echo "#1.2 Creating Virtual Environment"
-    py -3 -m venv "${virtualEnvironDir}" # actually create the virtual environment
-    "${virtualEnvironDir}/Scripts/activate"
-    pipLocation="$virtualEnvironDir/Scripts/pip3.exe"
-
-    echo "#1.3 Getting Path to Virtual Environment's Python"
-    pythonLocation="${virtualEnvironDir}/Scripts/python.exe"
-    echo "-- pythonLocation: ${pythonLocation}"
-
 else
-    # linux
-    # needed to get specific versions of python
-    pythonName=python${pythonVersion}
-    echo "#1.1 Adding python ppa"
-    add-apt-repository -y ppa:deadsnakes/ppa
+    if [[ ${installPkgs} = true ]]; then
+        # linux
+        # needed to get specific versions of python
+        pythonName=python${pythonVersion}
+        echo "#1.1 Adding python ppa"
+        add-apt-repository -y ppa:deadsnakes/ppa
 
-    echo "#1.2 Updating..."
-    apt update -y
+        echo "#1.2 Updating..."
+        apt update -y
 
-    echo "#1.3 Upgrading..."
-    apt upgrade -y
-    apt install -y \
-        ${pythonName} \
-        ${pythonName}-venv
+        echo "#1.3 Upgrading..."
+        apt upgrade -y
+        apt install -y \
+            ${pythonName} \
+            ${pythonName}-venv
 
-    echo "#1.4 Creating Virtual Environment"
-    ${pythonName} -m venv "${virtualEnvironDir}" # actually create the virtual environment
-    source "${virtualEnvironDir}/bin/activate"
-    pipLocation="${virtualEnvironDir}/bin/pip${pythonVersion}"
+        echo "#1.4 Creating Virtual Environment"
+        ${pythonName} -m venv "${virtualEnvironDir}" # actually create the virtual environment
+        source "${virtualEnvironDir}/bin/activate"
+        pipLocation="${virtualEnvironDir}/bin/pip${pythonVersion}"
 
-    echo "#1.4.1 Getting Path to Virtual Environment's Python"
-    pythonLocation="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
-    echo "-- pythonLocation: ${pythonLocation}"
+        echo "#1.4.1 Getting Path to Virtual Environment's Python"
+        pythonLocation="${virtualEnvironDir}/bin/python" # NOTE: don't use ".exe"
+        echo "-- pythonLocation: ${pythonLocation}"
+
+        # update pip to latest
+        echo "#2 Upgrading pip to latest"
+        "${pythonLocation}" -m pip install --upgrade pip
+
+        # now pip necessary packages
+        echo "#3 Installing all packages"
+        "${pipLocation}" install -r "${installDir}/requirements.txt"
+    fi
 fi
 
-if [[ ${upgradePkgs} == true ]]; then
-    # update pip to latest
-    echo "#2 Upgrading pip to latest"
-    "${pythonLocation}" -m pip install --upgrade pip
-
-    # now pip necessary packages
-    echo "#3 Installing all packages"
-    "${pipLocation}" install -r "${installDir}/requirements.txt"
-fi
-
-if [[ ${deployServices} == true ]]; then
+if [[ ${deployServices} = true ]]; then
     if [[ "${isWindows}" = false ]]; then
         echo "============= #4 Deploying Service ============="
         echo "#4.1 Creating user/group for database/service"
