@@ -141,7 +141,7 @@ if [[ ${deployServices} = true ]]; then
         echo "#4.2 Exporting Path to Source Code"
         # make environment variable for path global (if already exists -> replace it, but keep backup)
         # https://serverfault.com/a/413408 -- safest way to create & use environment vars with services
-        environDir=/etc/sysconfig
+        environDir=/etc/systemd/sysconfig
         environFile=${environDir}/full-stack-library-env
         echo "Environment File: ${environFile}"
         mkdir -p ${environDir}
@@ -158,7 +158,7 @@ if [[ ${deployServices} = true ]]; then
         serviceFileName=full-stack-library.service
         sysServiceDir=/etc/systemd/system
         localServiceFileDir="${installDir}${sysServiceDir}"
-        localServiceFile="${localServiceFileDir}/${full-stack-library.service}"
+        localServiceFile="${localServiceFileDir}/${serviceFileName}"
         cp "${localServiceFile}" "${sysServiceDir}/"
         echo "-- Deployed ${localServiceFile} -> ${sysServiceDir}/${serviceFileName}"
 
@@ -172,7 +172,10 @@ if [[ ${deployServices} = true ]]; then
         # Make Daemons Persistent for Boot
         echo "#4.6 Making Service Start at Boot"
         systemctl enable ${serviceFileName}
+
+        echo "============= #4 Done Deploying Service ============="
+    else # dont deploy service
+        echo "Please run the start.sh or start.bat files at the top level of the project."
     fi
 fi
 
-echo "Please run the start.sh or start.bat files at the top level of the project."
