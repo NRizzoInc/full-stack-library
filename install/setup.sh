@@ -24,22 +24,30 @@ print_flags () {
     echo "Available Flags (mutually exclusive):"
     echo "    -a | --install-all (default): If used, install everything (recommended for fresh installs)"
     echo "    -p | --python-packages: Update virtual environment with current python packages (this should be done on pulls)"
+    echo "    -s | --deploy-services: Deploy the source code to enable the system service to run (only works on Ubuntu)"
     echo "    -h | --help: This message"
     echo "========================================================================================================================="
 }
 
 # parse command line args
 upgradePkgs=true
+deployServices=false
 noneSet=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -a | --install-all )
             upgradePkgs=true
+            deployServices=true
             noneSet=false
             break
             ;;
         -p | --python-packages )
             upgradePkgs=true
+            noneSet=false
+            break
+            ;;
+        -s | --deploy-services )
+            deployServices=true
             noneSet=false
             break
             ;;
@@ -132,6 +140,49 @@ if [[ ${upgradePkgs} == true ]]; then
     # now pip necessary packages
     echo "#3 Installing all packages"
     "${pipLocation}" install -r "${installDir}/requirements.txt"
+fi
+
+if [[ ${deployServices} == true ]]; then
+    if [[ "${isWindows}" = false ]]; then
+        echo "============= #4 Deploying Service ============="
+        echo "#4.1 Creating user/group for database/service"
+        useradd full-stack-lib
+
+        echo "#4.2 Exporting Path to Source Code"
+        # make environment variable for path global (if already exists -> replace it, but keep backup)
+        # https://serverfault.com/a/413408 -- safest way to create & use environment vars with services
+        environDir=/etc/sysconfig
+        environFile=${environDir}/full-stack-library-env
+        echo "Environment File: ${environFile}"
+        mkdir -p ${environDir}
+        touch ${environFile}
+
+        # create backup & save new version with updated path
+        echo "#4.3 Deploying Service Environment File"
+        sed -i.bak '/full_stack_lib_root_dir=/d' ${environFile} # remove past line
+        echo "full_stack_lib_root_dir=${rootDir}" >> ${environFile} # add current line
+        source ${environFile}
+        echo "full_stack_lib_root_dir: ${rootDir}"
+
+        echo "#4.4 Deploying Service File"
+        serviceFileName=full-stack-library.service
+        sysServiceDir=/etc/systemd/system
+        localServiceFileDir="${installDir}${sysServiceDir}"
+        localServiceFile="${localServiceFileDir}/${full-stack-library.service}"
+        cp "${localServiceFile}" "${sysServiceDir}/"
+        echo "-- Deployed ${localServiceFile} -> ${sysServiceDir}/${serviceFileName}"
+
+        echo "#4.5 Starting Service"
+        # stop daemon to allow reload
+        systemctl stop ${serviceFileName}
+        # refresh service daemons
+        systemctl daemon-reload
+        systemctl start ${serviceFileName}
+
+        # Make Daemons Persistent for Boot
+        echo "#4.6 Making Service Start at Boot"
+        systemctl enable ${serviceFileName}
+    fi
 fi
 
 echo "Please run the start.sh or start.bat files at the top level of the project."
