@@ -30,22 +30,20 @@ print_flags () {
 }
 
 # parse command line args
-installAll=true
 installPkgs=false
 deployServices=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -a | --install-all )
-            installAll=true
+            installPkgs=true
+            deployServices=true
             break
             ;;
         -p | --python-packages )
             installPkgs=true
-            installAll=false
             ;;
         -s | --deploy-services )
             deployServices=true
-            installAll=false
             ;;
         -h | --help )
             print_flags
