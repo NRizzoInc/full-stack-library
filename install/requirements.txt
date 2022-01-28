@@ -28,3 +28,6 @@ protobuf==3.19.1
 python-engineio==4.3.0
 python-socketio==5.4.1
 pytz==2021.3
+cffi==1.15.0
+cryptography==36.0.1
+pycparser==2.21

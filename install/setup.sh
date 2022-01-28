@@ -135,19 +135,19 @@ if [[ ${deployServices} = true ]]; then
         echo "============= #4 Deploying Service ============="
         echo "#4.1 Creating user/group for database/service"
         # randomly generate mysql password (required)
-        symbols=(":" "+" ";" ".")
+        symbols=("!" "-" "*" "+" "@" "#" "%" "^" ".")
         s1=${symbols[ RANDOM % ${#symbols[@]} ]}
-        s2=${symbols[ RANDOM % ${#symbols[@]} ]}
-        mysql_rand_pwd=$(date +%s | sha256sum | base64 | head -c 32 ; echo)${s1}${s2}
-        mysql_user="full-stack-lib"
+        mysql_rand_pwd=$(date +%s | sha256sum | base64 | head -c 32 ; echo)${s1}${2}
+        mysql_user="full_stack_lib"
         useradd "${mysql_user}"
-        mysql -e "CREATE USER IF NOT EXISTS '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_rand_pwd}'"
+        mysql -e "DROP USER IF EXISTS ${mysql_user}"
+        mysql -e "CREATE USER '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_rand_pwd}'"
         mysql -e "GRANT ALL PRIVILEGES ON libsystem.* TO '${mysql_user}'@'localhost';"
 
         echo "#4.2 Exporting Path to Source Code"
         # make environment variable for path global (if already exists -> replace it, but keep backup)
         # https://serverfault.com/a/413408 -- safest way to create & use environment vars with services
-        environDir=/etc/systemd/sysconfig
+        environDir=/etc/sysconfig
         environFile=${environDir}/full-stack-library-env
         echo "Environment File: ${environFile}"
         mkdir -p ${environDir}
@@ -156,14 +156,17 @@ if [[ ${deployServices} = true ]]; then
         # create backup & save new version with updated path
         echo "#4.3 Deploying Service Environment File"
         # remove past lines
-        sed -i.bak '/full_stack_lib_root_dir=/d' ${environFile}
-        sed -i.bak '/mysql_access=/d' ${environFile}
-        sed -i.bak '/mysql_pwd=/d' ${environFile}
+        mv "${environFile}" "${environFile}.bkp"
+        # root_dir_pat="/full_stack_lib_root_dir=/d"
+        # mysql_access_pat="/mysql_access=/d"
+        # mysql_pwd_pat="/mysql_pwd=/d"
+        # sed -i.bak "${root_dir_pat};${mysql_access_pat};${mysql_pwd_pat}" ${environFile}
 
         # add new current lines
-        echo "full_stack_lib_root_dir=${rootDir}" >> ${environFile}
-        echo "mysql_access=${mysql_user}" >> ${environFile}
-        echo "mysql_pwd=${mysql_rand_pwd}" >> ${environFile}
+        touch "${environFile}"
+        echo "full_stack_lib_root_dir=${rootDir}" >> "${environFile}"
+        echo "mysql_access=${mysql_user}" >> "${environFile}"
+        echo "mysql_pwd=${mysql_rand_pwd}" >> "${environFile}"
         source ${environFile}
 
         echo "#4.4 Deploying Service File"

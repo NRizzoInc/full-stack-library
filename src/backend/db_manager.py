@@ -5,6 +5,7 @@ import os, sys
 import argparse # cli paths
 import datetime
 from typing import Optional, Dict, List
+import cryptography
 
 #-----------------------------3RD PARTY DEPENDENCIES-----------------------------#
 import pymysql
