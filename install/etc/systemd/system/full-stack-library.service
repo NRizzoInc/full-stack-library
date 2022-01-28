@@ -7,7 +7,7 @@ Requires=network-online.target
 User=full-stack-lib
 Group=full-stack-lib
 EnvironmentFile=/etc/sysconfig/full-stack-library-env
-ExecStart=/bin/bash ${full_stack_lib_root_dir}/start.sh --port 40365 -u full-stack-lib
+ExecStart=/bin/bash ${full_stack_lib_root_dir}/start.sh --port 40365 -u full-stack-lib -p ${mysql_access}
 RestartSec=1min
 
 [Install]
