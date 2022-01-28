@@ -139,7 +139,6 @@ if [[ ${deployServices} = true ]]; then
         s1=${symbols[ RANDOM % ${#symbols[@]} ]}
         s2=${symbols[ RANDOM % ${#symbols[@]} ]}
         mysql_rand_pwd=$(date +%s | sha256sum | base64 | head -c 32 ; echo)${s1}${s2}
-        echo "mysql_rand_pwd = ${mysql_rand_pwd}"
         mysql_user="full-stack-lib"
         useradd "${mysql_user}"
         mysql -e "CREATE USER IF NOT EXISTS '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_rand_pwd}'"
@@ -159,10 +158,12 @@ if [[ ${deployServices} = true ]]; then
         # remove past lines
         sed -i.bak '/full_stack_lib_root_dir=/d' ${environFile}
         sed -i.bak '/mysql_access=/d' ${environFile}
+        sed -i.bak '/mysql_pwd=/d' ${environFile}
 
         # add new current lines
         echo "full_stack_lib_root_dir=${rootDir}" >> ${environFile}
-        echo "mysql_access=${mysql_rand_pwd}" >> ${environFile}
+        echo "mysql_access=${mysql_user}" >> ${environFile}
+        echo "mysql_pwd=${mysql_rand_pwd}" >> ${environFile}
         source ${environFile}
 
         echo "#4.4 Deploying Service File"
