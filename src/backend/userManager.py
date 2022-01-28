@@ -17,12 +17,13 @@ from db_manager import DB_Manager
 from user import User
 
 class UserManager(LoginManager, DB_Manager):
-    def __init__(self, app: Flask, user:str, pwd:str, db:str):
+    def __init__(self, app: Flask, user:str, pwd:str, db:str, db_host:str='localhost'):
         """
             \n@param: app   - The flask app
             \n@param: user  - The username to connect to database with
             \n@param: pwd   - The password to connect to database with
             \n@param: db    - The name of the database to connect with
+            \n@param: db_host-  The hostname of the database to connect with
         """
         self.flaskApp = app
 
@@ -30,7 +31,7 @@ class UserManager(LoginManager, DB_Manager):
         LoginManager.__init__(self, self.flaskApp)
 
         # Create Database Manager
-        DB_Manager.__init__(self, user, pwd, db)
+        DB_Manager.__init__(self, user, pwd, db, db_host)
 
         self.createLoginManager()
 
