@@ -32,5 +32,5 @@ else
 fi
 
 
-echo "Starting Program ${executePath}"
+echo "Starting Program ${executePath} $ARGS"
 "${venvPath}" "${executePath}" $ARGS
