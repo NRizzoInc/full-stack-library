@@ -15,7 +15,7 @@ Authors:
   * Python version 3.9 (python3.9)
     * Download Page: https://www.python.org/downloads/release/python-390/
     * Please select the option at the bottom of the page that matches your Operating System
-* To see a live demo please access this site: `http://71.167.9.86:40365/`.
+* To see a live demo please access this site: `http://full-stack-library-app.herokuapp.com/login`.
   * If the page is down please contact one of the authors for support!
 
 ### Setup Steps:
