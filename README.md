@@ -5,6 +5,8 @@ Authors:
   - Nicholas Rizzo - rizzo.n@northeastern.edu
   - Domenic Privitera - privitera.d@northeastern.edu
 
+For a full explanation & demo, please read [the docs](./docs/PriviteraDRizzoMRizzoN_Final_Report.pdf)
+
 ## Creating and Running the Project
 * libraries - see [install/requirements.txt](install/requirements.txt)
   * However, existing scripts will handle the installation / setup of these libraries (assuming you can run the [install/setup.sh](install/setup.sh) or [install/setup.bat](install/setup.bat) files)
