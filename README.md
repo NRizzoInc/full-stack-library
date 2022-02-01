@@ -7,6 +7,9 @@ Authors:
 
 For a full explanation & demo, please read [the docs](./docs/PriviteraDRizzoMRizzoN_Final_Report.pdf)
 
+To see a live demo please access the [deployed webapp here](http://full-stack-library-app.herokuapp.com/login).
+If the page is down please contact one of the authors for support!
+
 ## Creating and Running the Project
 * libraries - see [install/requirements.txt](install/requirements.txt)
   * However, existing scripts will handle the installation / setup of these libraries (assuming you can run the [install/setup.sh](install/setup.sh) or [install/setup.bat](install/setup.bat) files)
@@ -17,8 +20,6 @@ For a full explanation & demo, please read [the docs](./docs/PriviteraDRizzoMRiz
   * Python version 3.9 (python3.9)
     * Download Page: https://www.python.org/downloads/release/python-390/
     * Please select the option at the bottom of the page that matches your Operating System
-* To see a live demo please access this site: `http://full-stack-library-app.herokuapp.com/login`.
-  * If the page is down please contact one of the authors for support!
 
 ### Setup Steps:
 1. (For Windows Only) Download [Python3.9](https://www.python.org/downloads/release/python-390/)
